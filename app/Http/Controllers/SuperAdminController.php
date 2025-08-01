@@ -307,9 +307,11 @@ class SuperAdminController extends Controller
         // Filter by status
         if ($request->has('status')) {
             if ($request->status === 'pending') {
-                $query->where('is_approved', false);
-            } elseif ($request->status === 'approved') {
-                $query->where('is_approved', true);
+                $query->where('status', 'pending');
+            } elseif ($request->status === 'completed') {
+                $query->where('status', 'completed');
+            } elseif ($request->status === 'failed') {
+                $query->where('status', 'failed');
             }
         }
 
@@ -329,7 +331,7 @@ class SuperAdminController extends Controller
             'actual_balance' => $business->actual_balance ?? 0,
             'total_balance' => $business->balance ?? 0,
             'withdrawal_amount' => $withdrawal->amount,
-            'can_approve' => ($business->withdrawable_balance ?? 0) >= $withdrawal->amount,
+            'can_approve' => ($business->withdrawable_balance ?? 0) >= $withdrawal->amount && $withdrawal->status === 'pending',
             'balance_shortfall' => max(0, $withdrawal->amount - ($business->withdrawable_balance ?? 0))
         ];
         
@@ -367,6 +369,7 @@ class SuperAdminController extends Controller
 
             // Update withdrawal
             $withdrawal->update([
+                'status' => 'completed',
                 'is_approved' => true,
                 'processed_by' => auth()->user()->name,
                 'admin_notes' => $validated['admin_notes'],
@@ -421,6 +424,7 @@ class SuperAdminController extends Controller
         DB::beginTransaction();
         try {
             $withdrawal->update([
+                'status' => 'failed',
                 'is_approved' => false,
                 'processed_by' => auth()->user()->name,
                 'admin_notes' => $validated['admin_notes'],

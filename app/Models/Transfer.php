@@ -51,12 +51,15 @@ class Transfer extends Model
      */
     public function getStatusTextAttribute()
     {
-        if ($this->is_approved === true) {
-            return 'Approved';
-        } elseif ($this->is_approved === false) {
-            return 'Rejected';
-        } else {
-            return 'Pending';
+        switch ($this->status) {
+            case 'pending':
+                return 'Pending';
+            case 'completed':
+                return 'Completed';
+            case 'failed':
+                return 'Failed';
+            default:
+                return 'Unknown';
         }
     }
 
@@ -65,12 +68,39 @@ class Transfer extends Model
      */
     public function getStatusBadgeClassAttribute()
     {
-        if ($this->is_approved === true) {
-            return 'bg-success';
-        } elseif ($this->is_approved === false) {
-            return 'bg-danger';
-        } else {
-            return 'bg-warning';
+        switch ($this->status) {
+            case 'pending':
+                return 'bg-warning';
+            case 'completed':
+                return 'bg-success';
+            case 'failed':
+                return 'bg-danger';
+            default:
+                return 'bg-secondary';
         }
+    }
+
+    /**
+     * Check if withdrawal is pending approval
+     */
+    public function getIsPendingAttribute()
+    {
+        return $this->status === 'pending';
+    }
+
+    /**
+     * Check if withdrawal is completed
+     */
+    public function getIsCompletedAttribute()
+    {
+        return $this->status === 'completed';
+    }
+
+    /**
+     * Check if withdrawal is failed
+     */
+    public function getIsFailedAttribute()
+    {
+        return $this->status === 'failed';
     }
 }

@@ -21,7 +21,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="card-title mb-1">Pending</h6>
-                                <h2 class="mb-0">{{ $withdrawals->where('is_approved', null)->count() }}</h2>
+                                <h2 class="mb-0">{{ $withdrawals->where('status', 'pending')->count() }}</h2>
                             </div>
                             <i class="fas fa-clock fa-2x opacity-75"></i>
                         </div>
@@ -33,8 +33,8 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-1">Approved</h6>
-                                <h2 class="mb-0">{{ $withdrawals->where('is_approved', true)->count() }}</h2>
+                                <h6 class="card-title mb-1">Completed</h6>
+                                <h2 class="mb-0">{{ $withdrawals->where('status', 'completed')->count() }}</h2>
                             </div>
                             <i class="fas fa-check-circle fa-2x opacity-75"></i>
                         </div>
@@ -46,8 +46,8 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-1">Rejected</h6>
-                                <h2 class="mb-0">{{ $withdrawals->where('is_approved', false)->count() }}</h2>
+                                <h6 class="card-title mb-1">Failed</h6>
+                                <h2 class="mb-0">{{ $withdrawals->where('status', 'failed')->count() }}</h2>
                             </div>
                             <i class="fas fa-times-circle fa-2x opacity-75"></i>
                         </div>
@@ -60,7 +60,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="card-title mb-1">Pending Amount</h6>
-                                <h2 class="mb-0">₦{{ number_format($withdrawals->where('is_approved', null)->sum('amount'), 2) }}</h2>
+                                <h2 class="mb-0">₦{{ number_format($withdrawals->where('status', 'pending')->sum('amount'), 2) }}</h2>
                             </div>
                             <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
                         </div>
@@ -163,7 +163,7 @@
                                             <a href="{{ route('super-admin.withdrawals.show', $withdrawal) }}" class="btn btn-sm btn-outline-info">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            @if(!$withdrawal->is_approved)
+                                            @if($withdrawal->status === 'pending')
                                                 <button type="button" class="btn btn-sm btn-outline-success" 
                                                         onclick="approveWithdrawal({{ $withdrawal->id }})">
                                                     <i class="fas fa-check"></i>
