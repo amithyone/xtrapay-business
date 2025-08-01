@@ -107,60 +107,86 @@ class WebhookController extends Controller
                 }
             }
 
-            // Check if transaction already exists
+            // Check if transaction already exists by reference and site
             $existingTransaction = Transaction::where('reference', $data['reference'])
                                             ->where('site_id', $site->id)
                                             ->first();
 
             if ($existingTransaction) {
-                // Update existing transaction if status has changed
-                if ($existingTransaction->status !== $data['status']) {
-                    $oldStatus = $existingTransaction->status;
-                    $existingTransaction->update([
-                        'status' => $data['status'],
-                        'metadata' => array_merge($existingTransaction->metadata ?? [], $data['metadata'] ?? [])
-                    ]);
+                Log::info('Found existing transaction', [
+                    'transaction_id' => $existingTransaction->id,
+                    'reference' => $data['reference'],
+                    'current_status' => $existingTransaction->status,
+                    'new_status' => $data['status'],
+                    'site' => $site->name
+                ]);
 
-                    Log::info('Transaction status updated', [
+                // Always update the transaction with new data, regardless of status change
+                $oldStatus = $existingTransaction->status;
+                $oldAmount = $existingTransaction->amount;
+                
+                $updateData = [
+                    'status' => $data['status'],
+                    'amount' => $data['amount'],
+                    'currency' => $data['currency'],
+                    'payment_method' => $data['payment_method'] ?? $existingTransaction->payment_method,
+                    'customer_email' => $data['customer_email'] ?? $existingTransaction->customer_email,
+                    'customer_name' => $data['customer_name'] ?? $existingTransaction->customer_name,
+                    'description' => $data['description'] ?? $existingTransaction->description,
+                    'external_id' => $data['external_id'] ?? $existingTransaction->external_id,
+                    'metadata' => array_merge($existingTransaction->metadata ?? [], $data['metadata'] ?? []),
+                    'updated_at' => $data['timestamp'] ?? now(),
+                ];
+
+                $existingTransaction->update($updateData);
+
+                Log::info('Transaction updated', [
+                    'transaction_id' => $existingTransaction->id,
+                    'reference' => $data['reference'],
+                    'old_status' => $oldStatus,
+                    'new_status' => $data['status'],
+                    'old_amount' => $oldAmount,
+                    'new_amount' => $data['amount'],
+                    'site' => $site->name
+                ]);
+
+                // Credit business profile if status changed to success
+                if ($data['status'] === 'success' && $oldStatus !== 'success') {
+                    $this->creditBusinessProfile($site, $data['amount']);
+                    
+                    Log::info('Business profile credited for successful transaction', [
                         'transaction_id' => $existingTransaction->id,
                         'reference' => $data['reference'],
-                        'old_status' => $oldStatus,
-                        'new_status' => $data['status'],
+                        'amount' => $data['amount'],
                         'site' => $site->name
                     ]);
-
-                    // Credit business profile if status changed to success
-                    if ($data['status'] === 'success' && $oldStatus !== 'success') {
-                        $this->creditBusinessProfile($site, $data['amount']);
-                        
-                        Log::info('Business profile credited for successful transaction', [
-                            'transaction_id' => $existingTransaction->id,
-                            'reference' => $data['reference'],
-                            'amount' => $data['amount'],
-                            'site' => $site->name
-                        ]);
-                        
-                        // Send Telegram notification for successful transaction
-                        $this->sendTelegramNotification($existingTransaction);
-                    }
-                } else {
-                    Log::info('Transaction status unchanged', [
-                        'transaction_id' => $existingTransaction->id,
-                        'reference' => $data['reference'],
-                        'status' => $data['status'],
-                        'site' => $site->name
-                    ]);
+                    
+                    // Dispatch savings collection job for successful transactions
+                    \App\Jobs\ProcessSavingsCollection::dispatch($existingTransaction);
+                    
+                    // Send Telegram notification for successful transaction
+                    $this->sendTelegramNotification($existingTransaction);
                 }
 
                 return response()->json([
                     'success' => true,
                     'message' => 'Transaction updated successfully',
                     'transaction_id' => $existingTransaction->id,
-                    'action' => 'updated'
+                    'action' => 'updated',
+                    'old_status' => $oldStatus,
+                    'new_status' => $data['status']
                 ]);
             }
 
-            // Create new transaction
+            // Create new transaction (no existing transaction found)
+            Log::info('Creating new transaction - no existing transaction found', [
+                'reference' => $data['reference'],
+                'site_id' => $site->id,
+                'site_name' => $site->name,
+                'status' => $data['status'],
+                'amount' => $data['amount']
+            ]);
+
             $transaction = Transaction::create([
                 'site_id' => $site->id,
                 'business_profile_id' => $site->business_profile_id,
@@ -178,7 +204,7 @@ class WebhookController extends Controller
                 'updated_at' => $data['timestamp'] ?? now(),
             ]);
 
-            Log::info('New transaction created', [
+            Log::info('New transaction created successfully', [
                 'transaction_id' => $transaction->id,
                 'reference' => $data['reference'],
                 'amount' => $data['amount'],
@@ -196,6 +222,9 @@ class WebhookController extends Controller
                     'amount' => $data['amount'],
                     'site' => $site->name
                 ]);
+                
+                // Dispatch savings collection job for successful transactions
+                \App\Jobs\ProcessSavingsCollection::dispatch($transaction);
                 
                 // Send Telegram notification for successful transaction
                 $this->sendTelegramNotification($transaction);

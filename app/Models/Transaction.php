@@ -53,4 +53,29 @@ class Transaction extends Model
     {
         return number_format($this->amount, 2) . ' ' . $this->currency;
     }
+
+    /**
+     * Check if transaction should be abandoned (pending for more than 6 hours)
+     */
+    public function shouldBeAbandoned(int $hours = 6): bool
+    {
+        return $this->status === 'pending' && 
+               $this->created_at->diffInHours(now()) >= $hours;
+    }
+
+    /**
+     * Get the age of the transaction in hours
+     */
+    public function getAgeInHoursAttribute(): int
+    {
+        return $this->created_at->diffInHours(now());
+    }
+
+    /**
+     * Get the age of the transaction in a human-readable format
+     */
+    public function getAgeForHumansAttribute(): string
+    {
+        return $this->created_at->diffForHumans();
+    }
 }

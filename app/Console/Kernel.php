@@ -15,6 +15,12 @@ class Kernel extends ConsoleKernel
     {
         // Schedule the import external transactions job to run every hour
         $schedule->job(new ImportExternalTransactions)->hourly();
+        
+        // Abandon pending transactions after 6 hours (run every hour)
+        $schedule->command('transactions:abandon-pending --hours=6')
+                ->hourly()
+                ->withoutOverlapping()
+                ->runInBackground();
     }
 
     /**

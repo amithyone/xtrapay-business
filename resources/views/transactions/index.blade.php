@@ -214,6 +214,12 @@
                                             $statusColor = $statusColors[$transaction->status] ?? 'bg-secondary';
                                         @endphp
                                         <span class="badge {{ $statusColor }}">{{ ucfirst($transaction->status) }}</span>
+                                        @if($transaction->status === 'pending')
+                                            <br><small class="text-muted">{{ $transaction->age_for_humans }}</small>
+                                            @if($transaction->should_be_abandoned)
+                                                <br><small class="text-danger"><i class="fas fa-exclamation-triangle"></i> Should be abandoned</small>
+                                            @endif
+                                        @endif
                                     </td>
                                     <td class="d-none d-md-table-cell">
                                         <div class="text-capitalize">{{ $transaction->payment_method }}</div>
