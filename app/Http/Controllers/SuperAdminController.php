@@ -22,8 +22,6 @@ class SuperAdminController extends Controller
 
     public function __construct()
     {
-        $this->middleware('auth');
-        $this->middleware('super_admin');
         $this->savingsService = new SavingsCollectionService();
     }
 
