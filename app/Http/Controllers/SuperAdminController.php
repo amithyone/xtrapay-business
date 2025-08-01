@@ -289,6 +289,11 @@ class SuperAdminController extends Controller
         }
     }
 
+    public function showBalanceUpdate(BusinessProfile $business)
+    {
+        return view('super-admin.businesses.balance', compact('business'));
+    }
+
     /**
      * Withdrawal Management
      */

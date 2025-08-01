@@ -212,6 +212,7 @@ Route::middleware(['auth', 'super_admin'])->prefix('super-admin')->name('super-a
     
     Route::get('/businesses', [SuperAdminController::class, 'businesses'])->name('businesses.index');
     Route::get('/businesses/{business}', [SuperAdminController::class, 'showBusiness'])->name('businesses.show');
+    Route::get('/businesses/{business}/balance', [SuperAdminController::class, 'showBalanceUpdate'])->name('businesses.balance.show');
     Route::post('/businesses/{business}/balance', [SuperAdminController::class, 'updateBusinessBalance'])->name('businesses.balance');
     Route::get('/businesses/{business}/edit', [SuperAdminController::class, 'editBusiness'])->name('businesses.edit');
     Route::post('/businesses/{business}/update', [SuperAdminController::class, 'updateBusiness'])->name('businesses.update');

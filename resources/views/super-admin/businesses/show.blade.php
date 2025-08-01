@@ -10,9 +10,9 @@
                 <a href="{{ route('super-admin.businesses.index') }}" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left me-2"></i>Back to Businesses
                 </a>
-                <button type="button" class="btn btn-primary" onclick="updateBalance()">
-                    <i class="fas fa-edit me-2"></i>Update Balance
-                </button>
+                <a href="{{ route('super-admin.businesses.balance.show', $business) }}" class="btn btn-outline-primary">
+                    <i class="fas fa-wallet me-2"></i>Update Balance
+                </a>
             </div>
         </div>
 
@@ -281,9 +281,6 @@
                             <a href="{{ route('super-admin.tickets.index') }}?search={{ $business->user->name }}" class="btn btn-outline-info">
                                 <i class="fas fa-ticket-alt me-2"></i>View Support Tickets
                             </a>
-                            <button type="button" class="btn btn-outline-primary" onclick="updateBalance()">
-                                <i class="fas fa-edit me-2"></i>Update Balance
-                            </button>
                         </div>
                     </div>
                 </div>
