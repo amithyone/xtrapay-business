@@ -176,7 +176,15 @@ Route::get('/manager/second-code', [AdminController::class, 'showSecondCode'])->
 Route::post('/manager/verify-second-code', [AdminController::class, 'verifySecondCode'])->name('admin.verify_second_code');
 Route::get('/manager/admin-login', [AdminController::class, 'showAdminLogin'])->name('admin.admin_login');
 Route::post('/manager/admin-login', [AdminController::class, 'login'])->name('admin.login');
-Route::get('/manager/dashboard', [AdminController::class, 'index'])->name('admin.index');
+Route::get('/manager/dashboard', [AdminController::class, 'index'])->name('manager.dashboard');
+
+// Super Admin Redirect (for easier access)
+Route::get('/super-admin', function () {
+    if (auth()->check() && auth()->user()->superAdmin) {
+        return redirect()->route('super-admin.dashboard');
+    }
+    return redirect()->route('login')->with('error', 'Please login as a super admin to access this area.');
+})->name('super-admin.redirect');
 
 // Super Admin Routes
 Route::middleware(['auth', 'super_admin'])->prefix('super-admin')->name('super-admin.')->group(function () {
