@@ -180,11 +180,26 @@ Route::get('/manager/dashboard', [AdminController::class, 'index'])->name('manag
 
 // Super Admin Redirect (for easier access)
 Route::get('/super-admin', function () {
-    if (auth()->check() && auth()->user()->superAdmin) {
+    if (auth()->check() && auth()->user()->superAdmin && auth()->user()->superAdmin->is_active) {
         return redirect()->route('super-admin.dashboard');
     }
     return redirect()->route('login')->with('error', 'Please login as a super admin to access this area.');
 })->name('super-admin.redirect');
+
+// Test route to check super admin status
+Route::get('/test-super-admin', function () {
+    if (auth()->check()) {
+        $user = auth()->user();
+        return response()->json([
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'has_super_admin' => $user->superAdmin ? true : false,
+            'super_admin_active' => $user->superAdmin && $user->superAdmin->is_active ? true : false,
+            'is_super_admin' => $user->isSuperAdmin()
+        ]);
+    }
+    return response()->json(['error' => 'Not authenticated']);
+})->middleware('auth');
 
 // Super Admin Routes
 Route::middleware(['auth', 'super_admin'])->prefix('super-admin')->name('super-admin.')->group(function () {

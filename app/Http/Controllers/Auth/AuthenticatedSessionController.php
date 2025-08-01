@@ -31,6 +31,11 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('verification.notice');
         }
 
+        // Check if user is a super admin and redirect accordingly
+        if ($request->user()->superAdmin && $request->user()->superAdmin->is_active) {
+            return redirect()->intended(route('super-admin.dashboard'));
+        }
+
         return redirect()->intended(route('dashboard'));
     }
 
