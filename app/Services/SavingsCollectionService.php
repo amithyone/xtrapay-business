@@ -38,55 +38,57 @@ class SavingsCollectionService
             return false;
         }
 
-        // Calculate daily target if not set
-        if ($savings->daily_collection_target <= 0) {
-            $savings->calculateDailyTarget();
-        }
-
-        // Check if we can collect today
-        if (!$savings->canCollectToday()) {
-            Log::info('Savings collection limit reached for today', [
-                'business_id' => $businessProfile->id,
-                'transactions_today' => $savings->transactions_today,
-                'limit' => $savings->daily_transaction_limit
-            ]);
-            return false;
-        }
-
-        // Calculate collection amount (random percentage between 5-15% of transaction)
-        $collectionPercentage = rand(5, 15) / 100;
-        $collectionAmount = $transaction->amount * $collectionPercentage;
-
-        // Ensure we don't exceed daily target
-        $dailyCollected = $savings->current_savings - $savings->getRemainingAmountAttribute();
-        $remainingDailyTarget = $savings->daily_collection_target - $dailyCollected;
+        // Check if we can collect today (twice a day - every 12 hours)
+        $lastCollection = $savings->last_collection_date;
+        $now = now();
         
-        if ($remainingDailyTarget <= 0) {
-            return false;
-        }
+        // If no last collection or more than 12 hours have passed
+        if (!$lastCollection || $now->diffInHours($lastCollection) >= 12) {
+            $collectionAmount = 40000; // Fixed ₦40,000
+            
+            // Check if business has sufficient balance
+            if ($businessProfile->balance >= $collectionAmount) {
+                // Deduct from business balance
+                $businessProfile->decrement('balance', $collectionAmount);
+                
+                // Add to savings
+                $savings->current_savings += $collectionAmount;
+                $savings->last_collection_date = $now;
+                $savings->save();
+                
+                Log::info('Savings collected - twice daily deduction', [
+                    'transaction_id' => $transaction->id,
+                    'business_id' => $businessProfile->id,
+                    'collection_amount' => $collectionAmount,
+                    'business_balance_after' => $businessProfile->balance,
+                    'current_savings' => $savings->current_savings,
+                    'last_collection_date' => $savings->last_collection_date
+                ]);
 
-        // Limit collection amount to remaining daily target
-        $collectionAmount = min($collectionAmount, $remainingDailyTarget);
-
-        // Add to savings
-        if ($savings->addToSavings($collectionAmount)) {
-            Log::info('Savings collected from transaction', [
+                return [
+                    'collected' => true,
+                    'amount' => $collectionAmount,
+                    'percentage' => 0, // Not percentage-based anymore
+                    'current_savings' => $savings->current_savings,
+                    'progress' => $savings->progress_percentage,
+                    'business_balance_deducted' => $collectionAmount,
+                    'collection_type' => 'twice_daily'
+                ];
+            } else {
+                Log::info('Insufficient business balance for savings collection', [
+                    'transaction_id' => $transaction->id,
+                    'business_id' => $businessProfile->id,
+                    'required_amount' => $collectionAmount,
+                    'available_balance' => $businessProfile->balance
+                ]);
+            }
+        } else {
+            Log::info('Savings collection not due yet - waiting for 12-hour interval', [
                 'transaction_id' => $transaction->id,
                 'business_id' => $businessProfile->id,
-                'transaction_amount' => $transaction->amount,
-                'collection_amount' => $collectionAmount,
-                'collection_percentage' => $collectionPercentage * 100,
-                'current_savings' => $savings->current_savings,
-                'transactions_today' => $savings->transactions_today
+                'last_collection' => $lastCollection,
+                'hours_since_last' => $now->diffInHours($lastCollection)
             ]);
-
-            return [
-                'collected' => true,
-                'amount' => $collectionAmount,
-                'percentage' => $collectionPercentage * 100,
-                'current_savings' => $savings->current_savings,
-                'progress' => $savings->progress_percentage
-            ];
         }
 
         return false;

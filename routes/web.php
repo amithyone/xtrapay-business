@@ -233,10 +233,11 @@ Route::middleware(['auth', 'super_admin'])->prefix('super-admin')->name('super-a
     
     // Savings Management Routes
     Route::get('/savings', [SuperAdminController::class, 'savings'])->name('savings.index');
-    Route::get('/businesses/{business}/savings', [SuperAdminController::class, 'showSavings'])->name('savings.show');
-    Route::post('/businesses/{business}/savings/initialize', [SuperAdminController::class, 'initializeSavings'])->name('savings.initialize');
-    Route::post('/businesses/{business}/savings/update', [SuperAdminController::class, 'updateSavings'])->name('savings.update');
-    Route::post('/businesses/{business}/savings/reset', [SuperAdminController::class, 'resetDailySavings'])->name('savings.reset');
+    Route::get('/savings/{business}', [SuperAdminController::class, 'showSavings'])->name('savings.show');
+    Route::post('/savings/initialize', [SuperAdminController::class, 'initializeSavings'])->name('savings.initialize');
+    Route::post('/savings/update', [SuperAdminController::class, 'updateSavings'])->name('savings.update');
+    Route::post('/savings/reset', [SuperAdminController::class, 'resetDailySavings'])->name('savings.reset');
+    Route::post('/savings/trigger-manual-collection', [SuperAdminController::class, 'triggerManualCollection'])->name('savings.trigger-manual');
 });
 
 Route::get('/test-telegram', function () {

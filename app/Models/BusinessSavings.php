@@ -14,9 +14,6 @@ class BusinessSavings extends Model
         'business_profile_id',
         'monthly_goal',
         'current_savings',
-        'daily_collection_target',
-        'daily_transaction_limit',
-        'transactions_today',
         'last_collection_date',
         'is_active',
         'notes'
@@ -25,11 +22,8 @@ class BusinessSavings extends Model
     protected $casts = [
         'monthly_goal' => 'decimal:2',
         'current_savings' => 'decimal:2',
-        'daily_collection_target' => 'decimal:2',
-        'daily_transaction_limit' => 'integer',
-        'transactions_today' => 'integer',
-        'last_collection_date' => 'date',
-        'is_active' => 'boolean',
+        'last_collection_date' => 'datetime',
+        'is_active' => 'boolean'
     ];
 
     public function businessProfile()
@@ -49,33 +43,15 @@ class BusinessSavings extends Model
     }
 
     /**
-     * Check if we can collect from a transaction today
-     */
-    public function canCollectToday()
-    {
-        $today = Carbon::today();
-        
-        // Reset daily counter if it's a new day
-        if ($this->last_collection_date != $today) {
-            $this->transactions_today = 0;
-            $this->last_collection_date = $today;
-            $this->save();
-        }
-
-        return $this->transactions_today < $this->daily_transaction_limit;
-    }
-
-    /**
      * Add to savings from a transaction
      */
     public function addToSavings($amount)
     {
-        if (!$this->canCollectToday()) {
+        if (!$this->isCollectionDue()) {
             return false;
         }
 
         $this->current_savings += $amount;
-        $this->transactions_today += 1;
         $this->last_collection_date = Carbon::today();
         $this->save();
 
@@ -83,32 +59,46 @@ class BusinessSavings extends Model
     }
 
     /**
-     * Get progress percentage
+     * Get the progress percentage toward monthly goal
      */
-    public function getProgressPercentageAttribute()
+    public function getProgressPercentageAttribute(): float
     {
-        if ($this->monthly_goal <= 0) return 0;
-        return min(100, ($this->current_savings / $this->monthly_goal) * 100);
+        if ($this->monthly_goal <= 0) {
+            return 0;
+        }
+        return ($this->current_savings / $this->monthly_goal) * 100;
     }
 
     /**
-     * Get remaining amount to reach monthly goal
+     * Get the remaining amount to reach monthly goal
      */
-    public function getRemainingAmountAttribute()
+    public function getRemainingAmountAttribute(): float
     {
         return max(0, $this->monthly_goal - $this->current_savings);
     }
 
     /**
-     * Get daily progress
+     * Check if savings collection is due (every 12 hours)
      */
-    public function getDailyProgressAttribute()
+    public function isCollectionDue(): bool
     {
-        $today = Carbon::today();
-        $daysInMonth = Carbon::now()->daysInMonth;
-        $currentDay = Carbon::now()->day;
+        if (!$this->last_collection_date) {
+            return true;
+        }
         
-        $expectedSavings = ($this->monthly_goal / $daysInMonth) * $currentDay;
-        return min(100, ($this->current_savings / $expectedSavings) * 100);
+        return now()->diffInHours($this->last_collection_date) >= 12;
+    }
+
+    /**
+     * Get hours until next collection
+     */
+    public function getHoursUntilNextCollectionAttribute(): int
+    {
+        if (!$this->last_collection_date) {
+            return 0;
+        }
+        
+        $hoursSinceLast = now()->diffInHours($this->last_collection_date);
+        return max(0, 12 - $hoursSinceLast);
     }
 } 

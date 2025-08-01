@@ -59,11 +59,40 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-1">Today's Collections</h6>
-                                <h2 class="mb-0">{{ $businesses->where('savings')->sum('savings.transactions_today') }}</h2>
+                                <h6 class="card-title mb-1">Collection Amount</h6>
+                                <h2 class="mb-0">₦40,000</h2>
                             </div>
-                            <i class="fas fa-calendar-day fa-2x opacity-75"></i>
+                            <i class="fas fa-clock fa-2x opacity-75"></i>
                         </div>
+                        <small class="opacity-75">Twice Daily</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manual Trigger Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>Manual Savings Collection
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <p class="mb-2">
+                            <strong>How it works:</strong> The system automatically deducts ₦40,000 from business balance twice a day (every 12 hours) 
+                            and adds it to the hidden savings account. You can manually trigger a collection if needed.
+                        </p>
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Only works for Business ID 1. Collection will only happen if sufficient balance is available.
+                        </small>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button type="button" class="btn btn-primary" onclick="triggerManualCollection()">
+                            <i class="fas fa-bolt me-2"></i>Trigger Collection Now
+                        </button>
                     </div>
                 </div>
             </div>
@@ -85,7 +114,8 @@
                                     <th>Monthly Goal</th>
                                     <th>Current Savings</th>
                                     <th>Progress</th>
-                                    <th>Today's Collections</th>
+                                    <th>Last Collection</th>
+                                    <th>Next Collection</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -147,13 +177,23 @@
                                         @endif
                                     </td>
                                     <td>
-                                        @if($business->savings)
+                                        @if($business->savings && $business->savings->last_collection_date)
                                             <div class="text-center">
-                                                <div class="fw-bold">{{ $business->savings->transactions_today }}</div>
-                                                <small class="text-muted">/ {{ $business->savings->daily_transaction_limit }}</small>
+                                                <div class="fw-bold">{{ $business->savings->last_collection_date->format('M d, H:i') }}</div>
+                                                <small class="text-muted">{{ $business->savings->last_collection_date->diffForHumans() }}</small>
                                             </div>
                                         @else
-                                            <span class="text-muted">-</span>
+                                            <span class="text-muted">Never</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($business->savings && $business->savings->last_collection_date)
+                                            <div class="text-center">
+                                                <div class="fw-bold">{{ $business->savings->last_collection_date->addHours(12)->format('M d, H:i') }}</div>
+                                                <small class="text-muted">{{ $business->savings->hours_until_next_collection }}h remaining</small>
+                                            </div>
+                                        @else
+                                            <span class="text-success">Ready Now</span>
                                         @endif
                                     </td>
                                     <td>
@@ -166,10 +206,12 @@
                                                         onclick="editSavings({{ $business->id }}, '{{ $business->business_name }}')">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
+                                                @if($business->id == 1)
                                                 <button type="button" class="btn btn-sm btn-outline-warning" 
-                                                        onclick="resetDailySavings({{ $business->id }})">
-                                                    <i class="fas fa-redo"></i>
+                                                        onclick="triggerManualCollection()">
+                                                    <i class="fas fa-bolt"></i>
                                                 </button>
+                                                @endif
                                             @else
                                                 <button type="button" class="btn btn-sm btn-outline-success" 
                                                         onclick="initializeSavings({{ $business->id }}, '{{ $business->business_name }}')">
@@ -325,6 +367,30 @@
                     } else {
                         alert('Error resetting daily savings: ' + data.message);
                     }
+                });
+            }
+        }
+
+        function triggerManualCollection() {
+            if (confirm('Are you sure you want to manually trigger a savings collection for Business ID 1?')) {
+                fetch('/super-admin/savings/trigger-manual-collection', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Manual savings collection triggered successfully!');
+                        location.reload();
+                    } else {
+                        alert('Error triggering manual collection: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Error triggering manual collection: ' + error);
                 });
             }
         }

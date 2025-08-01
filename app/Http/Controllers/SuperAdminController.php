@@ -751,4 +751,68 @@ class SuperAdminController extends Controller
             'is_verified' => $business->is_verified
         ]);
     }
+
+    /**
+     * Trigger manual savings collection
+     */
+    public function triggerManualCollection()
+    {
+        try {
+            $businessProfile = BusinessProfile::find(1);
+            if (!$businessProfile) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Business Profile ID 1 not found'
+                ]);
+            }
+
+            $savings = $businessProfile->savings;
+            if (!$savings || !$savings->is_active) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No active savings found for Business ID 1'
+                ]);
+            }
+
+            // Get a recent transaction to trigger collection
+            $transaction = Transaction::where('business_profile_id', 1)
+                ->where('status', 'success')
+                ->latest()
+                ->first();
+
+            if (!$transaction) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No successful transactions found for Business ID 1'
+                ]);
+            }
+
+            $savingsService = new SavingsCollectionService();
+            $result = $savingsService->processTransaction($transaction);
+
+            if ($result && $result['collected']) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Manual savings collection triggered successfully',
+                    'data' => [
+                        'amount_collected' => $result['amount'],
+                        'business_balance_deducted' => $result['business_balance_deducted'],
+                        'current_savings' => $result['current_savings'],
+                        'progress' => $result['progress']
+                    ]
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Collection not due yet or insufficient balance'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error triggering manual collection: ' . $e->getMessage()
+            ]);
+        }
+    }
 } 
