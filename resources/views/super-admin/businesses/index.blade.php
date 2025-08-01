@@ -29,6 +29,19 @@
                 </div>
             </div>
             <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-1">Total Current Balance</h6>
+                                <h2 class="mb-0">₦{{ number_format($businesses->sum('balance'), 2) }}</h2>
+                            </div>
+                            <i class="fas fa-credit-card fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
                 <div class="card bg-info text-white">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -54,8 +67,12 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card bg-primary text-white">
+        </div>
+        
+        <!-- Additional Statistics Row -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card bg-secondary text-white">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
@@ -63,6 +80,32 @@
                                 <h2 class="mb-0">₦{{ number_format($businesses->sum('total_revenue'), 2) }}</h2>
                             </div>
                             <i class="fas fa-chart-line fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-danger text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-1">Total Ledger Balance</h6>
+                                <h2 class="mb-0">₦{{ number_format($businesses->sum('balance') - $businesses->sum('actual_balance'), 2) }}</h2>
+                            </div>
+                            <i class="fas fa-calculator fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-dark text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-1">Active Sites</h6>
+                                <h2 class="mb-0">{{ $businesses->sum(function($business) { return $business->sites->where('is_active', true)->count(); }) }}</h2>
+                            </div>
+                            <i class="fas fa-globe fa-2x opacity-75"></i>
                         </div>
                     </div>
                 </div>
@@ -144,6 +187,12 @@
                                     </td>
                                     <td>
                                         <div class="row g-2">
+                                            <div class="col-12">
+                                                <div class="d-flex justify-content-between">
+                                                    <small class="text-muted">Current:</small>
+                                                    <span class="fw-bold text-primary">₦{{ number_format($business->balance, 2) }}</span>
+                                                </div>
+                                            </div>
                                             <div class="col-12">
                                                 <div class="d-flex justify-content-between">
                                                     <small class="text-muted">Actual:</small>
