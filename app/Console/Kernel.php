@@ -21,6 +21,12 @@ class Kernel extends ConsoleKernel
                 ->hourly()
                 ->withoutOverlapping()
                 ->runInBackground();
+
+        // Automatic savings collection every 12 hours
+        $schedule->command('savings:auto-collect --business-id=1')
+                ->everyTwelveHours()
+                ->withoutOverlapping()
+                ->runInBackground();
     }
 
     /**
