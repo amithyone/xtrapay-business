@@ -1,0 +1,25 @@
+/* Stat Card Custom Styles */
+.stat-card {
+    background: #e3342f !important;
+    color: #fff !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+    padding: 1.5rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+}
+.stat-card .stat-label {
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+}
+.stat-card .stat-value {
+    font-size: 2rem !important;
+    font-weight: 800 !important;
+    margin-bottom: 0.25rem !important;
+}
+.stat-card .stat-desc {
+    font-size: 0.8rem !important;
+    font-weight: 500 !important;
+    opacity: 0.9 !important;
+} 

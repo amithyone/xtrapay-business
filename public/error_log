@@ -1,0 +1,48 @@
+[07-Jul-2025 11:16:15 UTC] PHP Fatal error:  Uncaught ErrorException: Cannot modify header information - headers already sent by (output started at /home/wolrdhome/paymentgateway/Xtrabusiness/app/Http/Controllers/NotificationController.php:1) in /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/symfony/http-foundation/Response.php:322
+Stack trace:
+#0 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(256): Illuminate\Foundation\Bootstrap\HandleExceptions->handleError()
+#1 [internal function]: Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}()
+#2 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/symfony/http-foundation/Response.php(322): header()
+#3 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/symfony/http-foundation/Response.php(401): Symfony\Component\HttpFoundation\Response->sendHeaders()
+#4 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(219): Symfony\Component\HttpFoundation\Response->send()
+#5 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(196): Illuminate\Foundation\Bootstrap\HandleExceptions->renderHttpResponse()
+#6 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(256): Illuminate\Foundation\Bootstrap\HandleExceptions->handleException()
+#7 [internal function]: Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}()
+#8 {main}
+  thrown in /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/symfony/http-foundation/Response.php on line 322
+[07-Jul-2025 11:17:46 UTC] PHP Fatal error:  Uncaught ErrorException: Cannot modify header information - headers already sent by (output started at /home/wolrdhome/paymentgateway/Xtrabusiness/app/Http/Controllers/NotificationController.php:1) in /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/symfony/http-foundation/Response.php:322
+Stack trace:
+#0 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(256): Illuminate\Foundation\Bootstrap\HandleExceptions->handleError()
+#1 [internal function]: Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}()
+#2 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/symfony/http-foundation/Response.php(322): header()
+#3 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/symfony/http-foundation/Response.php(401): Symfony\Component\HttpFoundation\Response->sendHeaders()
+#4 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(219): Symfony\Component\HttpFoundation\Response->send()
+#5 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(196): Illuminate\Foundation\Bootstrap\HandleExceptions->renderHttpResponse()
+#6 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(256): Illuminate\Foundation\Bootstrap\HandleExceptions->handleException()
+#7 [internal function]: Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}()
+#8 {main}
+  thrown in /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/symfony/http-foundation/Response.php on line 322
+[07-Jul-2025 11:20:30 UTC] PHP Fatal error:  Uncaught ErrorException: Cannot modify header information - headers already sent by (output started at /home/wolrdhome/paymentgateway/Xtrabusiness/app/Http/Controllers/NotificationController.php:1) in /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/symfony/http-foundation/Response.php:322
+Stack trace:
+#0 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(256): Illuminate\Foundation\Bootstrap\HandleExceptions->handleError()
+#1 [internal function]: Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}()
+#2 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/symfony/http-foundation/Response.php(322): header()
+#3 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/symfony/http-foundation/Response.php(401): Symfony\Component\HttpFoundation\Response->sendHeaders()
+#4 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(219): Symfony\Component\HttpFoundation\Response->send()
+#5 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(196): Illuminate\Foundation\Bootstrap\HandleExceptions->renderHttpResponse()
+#6 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(256): Illuminate\Foundation\Bootstrap\HandleExceptions->handleException()
+#7 [internal function]: Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}()
+#8 {main}
+  thrown in /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/symfony/http-foundation/Response.php on line 322
+[07-Jul-2025 11:20:36 UTC] PHP Fatal error:  Uncaught ErrorException: Cannot modify header information - headers already sent by (output started at /home/wolrdhome/paymentgateway/Xtrabusiness/app/Http/Controllers/NotificationController.php:1) in /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/symfony/http-foundation/Response.php:322
+Stack trace:
+#0 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(256): Illuminate\Foundation\Bootstrap\HandleExceptions->handleError()
+#1 [internal function]: Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}()
+#2 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/symfony/http-foundation/Response.php(322): header()
+#3 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/symfony/http-foundation/Response.php(401): Symfony\Component\HttpFoundation\Response->sendHeaders()
+#4 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(219): Symfony\Component\HttpFoundation\Response->send()
+#5 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(196): Illuminate\Foundation\Bootstrap\HandleExceptions->renderHttpResponse()
+#6 /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(256): Illuminate\Foundation\Bootstrap\HandleExceptions->handleException()
+#7 [internal function]: Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}()
+#8 {main}
+  thrown in /home/wolrdhome/paymentgateway/Xtrabusiness/vendor/symfony/http-foundation/Response.php on line 322
