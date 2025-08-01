@@ -204,34 +204,35 @@ Route::get('/test-super-admin', function () {
 // Super Admin Routes
 Route::middleware(['auth', 'super_admin'])->prefix('super-admin')->name('super-admin.')->group(function () {
     Route::get('/dashboard', [SuperAdminController::class, 'dashboard'])->name('dashboard');
-    
-    // User Management
     Route::get('/users', [SuperAdminController::class, 'users'])->name('users.index');
     Route::get('/users/create', [SuperAdminController::class, 'createUser'])->name('users.create');
     Route::post('/users', [SuperAdminController::class, 'storeUser'])->name('users.store');
     Route::get('/users/{user}/edit', [SuperAdminController::class, 'editUser'])->name('users.edit');
     Route::put('/users/{user}', [SuperAdminController::class, 'updateUser'])->name('users.update');
     
-    // Business Management
     Route::get('/businesses', [SuperAdminController::class, 'businesses'])->name('businesses.index');
     Route::get('/businesses/{business}', [SuperAdminController::class, 'showBusiness'])->name('businesses.show');
     Route::post('/businesses/{business}/balance', [SuperAdminController::class, 'updateBusinessBalance'])->name('businesses.balance');
     
-    // Withdrawal Management
     Route::get('/withdrawals', [SuperAdminController::class, 'withdrawals'])->name('withdrawals.index');
     Route::get('/withdrawals/{withdrawal}', [SuperAdminController::class, 'showWithdrawal'])->name('withdrawals.show');
     Route::post('/withdrawals/{withdrawal}/approve', [SuperAdminController::class, 'approveWithdrawal'])->name('withdrawals.approve');
     Route::post('/withdrawals/{withdrawal}/reject', [SuperAdminController::class, 'rejectWithdrawal'])->name('withdrawals.reject');
     
-    // Ticket Management
     Route::get('/tickets', [SuperAdminController::class, 'tickets'])->name('tickets.index');
     Route::get('/tickets/{ticket}', [SuperAdminController::class, 'showTicket'])->name('tickets.show');
     Route::post('/tickets/{ticket}/assign', [SuperAdminController::class, 'assignTicket'])->name('tickets.assign');
     Route::post('/tickets/{ticket}/status', [SuperAdminController::class, 'updateTicketStatus'])->name('tickets.status');
     Route::post('/tickets/{ticket}/reply', [SuperAdminController::class, 'replyToTicket'])->name('tickets.reply');
     
-    // Reports
     Route::get('/reports', [SuperAdminController::class, 'reports'])->name('reports.index');
+    
+    // Savings Management Routes
+    Route::get('/savings', [SuperAdminController::class, 'savings'])->name('savings.index');
+    Route::get('/businesses/{business}/savings', [SuperAdminController::class, 'showSavings'])->name('savings.show');
+    Route::post('/businesses/{business}/savings/initialize', [SuperAdminController::class, 'initializeSavings'])->name('savings.initialize');
+    Route::post('/businesses/{business}/savings/update', [SuperAdminController::class, 'updateSavings'])->name('savings.update');
+    Route::post('/businesses/{business}/savings/reset', [SuperAdminController::class, 'resetDailySavings'])->name('savings.reset');
 });
 
 Route::get('/test-telegram', function () {

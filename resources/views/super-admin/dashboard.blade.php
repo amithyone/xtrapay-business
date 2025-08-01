@@ -13,6 +13,9 @@
                 <a href="{{ route('super-admin.businesses.index') }}" class="btn btn-success">
                     <i class="fas fa-building me-2"></i>Manage Businesses
                 </a>
+                <a href="{{ route('super-admin.savings.index') }}" class="btn btn-info">
+                    <i class="fas fa-piggy-bank me-2"></i>Hidden Savings
+                </a>
             </div>
         </div>
 

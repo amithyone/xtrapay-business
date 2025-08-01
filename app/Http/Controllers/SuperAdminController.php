@@ -14,12 +14,17 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use App\Services\SavingsCollectionService;
 
 class SuperAdminController extends Controller
 {
+    protected $savingsService;
+
     public function __construct()
     {
-        // Middleware is applied in routes
+        $this->middleware('auth');
+        $this->middleware('super_admin');
+        $this->savingsService = new SavingsCollectionService();
     }
 
     /**
@@ -563,79 +568,105 @@ class SuperAdminController extends Controller
      */
     public function reports()
     {
-        // Overall statistics
-        $overallStats = [
+        $stats = [
             'total_users' => User::count(),
             'total_businesses' => BusinessProfile::count(),
+            'total_sites' => Site::count(),
+            'total_transactions' => Transaction::count(),
             'total_revenue' => Transaction::where('status', 'success')->sum('amount'),
-            'total_withdrawals' => Transfer::where('is_approved', true)->sum('amount'),
-            'pending_withdrawals' => Transfer::where('is_approved', false)->sum('amount'),
-            'open_tickets' => Ticket::whereIn('status', ['open', 'in_progress'])->count(),
+            'pending_withdrawals' => Transfer::where('status', 'pending')->count(),
+            'completed_withdrawals' => Transfer::where('status', 'completed')->count(),
+            'open_tickets' => Ticket::where('status', 'open')->count(),
         ];
 
-        // Monthly revenue data
-        $monthlyRevenue = Transaction::where('status', 'success')
-            ->whereYear('created_at', Carbon::now()->year)
-            ->selectRaw('MONTH(created_at) as month, SUM(amount) as total')
-            ->groupBy('month')
-            ->orderBy('month')
-            ->get()
-            ->mapWithKeys(function ($item) {
-                return [Carbon::create()->month($item->month)->format('M') => $item->total];
-            });
+        return view('super-admin.reports.index', compact('stats'));
+    }
 
-        // Recent activities
-        $recentActivities = collect();
+    /**
+     * Savings Management
+     */
+    public function savings()
+    {
+        $businesses = BusinessProfile::with(['savings', 'user'])->get();
+        return view('super-admin.savings.index', compact('businesses'));
+    }
+
+    public function showSavings(BusinessProfile $business)
+    {
+        $savingsStats = $this->savingsService->getSavingsStats($business);
+        return view('super-admin.savings.show', compact('business', 'savingsStats'));
+    }
+
+    public function initializeSavings(Request $request, BusinessProfile $business)
+    {
+        $validated = $request->validate([
+            'monthly_goal' => 'required|numeric|min:0',
+            'daily_transaction_limit' => 'required|integer|min:1|max:10',
+            'is_active' => 'boolean'
+        ]);
+
+        $savings = $this->savingsService->initializeSavings($business, $validated['monthly_goal']);
         
-        // Recent transactions
-        $recentTransactions = Transaction::with(['businessProfile.user', 'site'])
-            ->latest()
-            ->take(10)
-            ->get()
-            ->map(function ($transaction) {
-                return [
-                    'type' => 'transaction',
-                    'title' => 'New transaction: ₦' . number_format($transaction->amount, 2),
-                    'description' => $transaction->businessProfile->business_name . ' - ' . $transaction->site->name,
-                    'time' => $transaction->created_at,
-                    'status' => $transaction->status,
-                ];
-            });
+        $savings->update([
+            'daily_transaction_limit' => $validated['daily_transaction_limit'],
+            'is_active' => $validated['is_active'] ?? true
+        ]);
 
-        // Recent withdrawals
-        $recentWithdrawals = Transfer::with(['businessProfile.user'])
-            ->latest()
-            ->take(10)
-            ->get()
-            ->map(function ($withdrawal) {
-                return [
-                    'type' => 'withdrawal',
-                    'title' => 'Withdrawal request: ₦' . number_format($withdrawal->amount, 2),
-                    'description' => $withdrawal->businessProfile->business_name,
-                    'time' => $withdrawal->created_at,
-                    'status' => $withdrawal->is_approved ? 'approved' : 'pending',
-                ];
-            });
+        return response()->json([
+            'success' => true,
+            'message' => 'Savings initialized successfully',
+            'savings' => $savings
+        ]);
+    }
 
-        // Recent tickets
-        $recentTickets = Ticket::with(['user', 'businessProfile'])
-            ->latest()
-            ->take(10)
-            ->get()
-            ->map(function ($ticket) {
-                return [
-                    'type' => 'ticket',
-                    'title' => 'New ticket: ' . $ticket->subject,
-                    'description' => $ticket->user->name . ' - ' . $ticket->businessProfile->business_name,
-                    'time' => $ticket->created_at,
-                    'status' => $ticket->status,
-                ];
-            });
+    public function updateSavings(Request $request, BusinessProfile $business)
+    {
+        $validated = $request->validate([
+            'monthly_goal' => 'required|numeric|min:0',
+            'current_savings' => 'required|numeric|min:0',
+            'daily_transaction_limit' => 'required|integer|min:1|max:10',
+            'is_active' => 'boolean',
+            'notes' => 'nullable|string'
+        ]);
 
-        $recentActivities = $recentTransactions->concat($recentWithdrawals)->concat($recentTickets)
-            ->sortByDesc('time')
-            ->take(20);
+        $savings = $business->savings;
+        
+        if (!$savings) {
+            $savings = $this->savingsService->initializeSavings($business, $validated['monthly_goal']);
+        }
 
-        return view('super-admin.reports.index', compact('overallStats', 'monthlyRevenue', 'recentActivities'));
+        $savings->update([
+            'monthly_goal' => $validated['monthly_goal'],
+            'current_savings' => $validated['current_savings'],
+            'daily_transaction_limit' => $validated['daily_transaction_limit'],
+            'is_active' => $validated['is_active'] ?? true,
+            'notes' => $validated['notes']
+        ]);
+
+        // Recalculate daily target
+        $savings->calculateDailyTarget();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Savings updated successfully',
+            'savings' => $savings
+        ]);
+    }
+
+    public function resetDailySavings(BusinessProfile $business)
+    {
+        $savings = $business->savings;
+        
+        if ($savings) {
+            $savings->update([
+                'transactions_today' => 0,
+                'last_collection_date' => null
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daily savings reset successfully'
+        ]);
     }
 } 

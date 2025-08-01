@@ -72,6 +72,11 @@ class BusinessProfile extends Model
         return $this->hasMany(Beneficiary::class);
     }
 
+    public function savings()
+    {
+        return $this->hasOne(BusinessSavings::class);
+    }
+
     /**
      * Get total revenue from all sites' successful transactions
      */
