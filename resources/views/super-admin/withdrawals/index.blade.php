@@ -21,7 +21,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="card-title mb-1">Pending</h6>
-                                <h2 class="mb-0">{{ $withdrawals->where('is_approved', false)->count() }}</h2>
+                                <h2 class="mb-0">{{ $withdrawals->where('is_approved', null)->count() }}</h2>
                             </div>
                             <i class="fas fa-clock fa-2x opacity-75"></i>
                         </div>
@@ -42,14 +42,14 @@
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-info text-white">
+                <div class="card bg-danger text-white">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-1">Total Amount</h6>
-                                <h2 class="mb-0">₦{{ number_format($withdrawals->sum('amount'), 2) }}</h2>
+                                <h6 class="card-title mb-1">Rejected</h6>
+                                <h2 class="mb-0">{{ $withdrawals->where('is_approved', false)->count() }}</h2>
                             </div>
-                            <i class="fas fa-money-bill-wave fa-2x opacity-75"></i>
+                            <i class="fas fa-times-circle fa-2x opacity-75"></i>
                         </div>
                     </div>
                 </div>
@@ -60,7 +60,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="card-title mb-1">Pending Amount</h6>
-                                <h2 class="mb-0">₦{{ number_format($withdrawals->where('is_approved', false)->sum('amount'), 2) }}</h2>
+                                <h2 class="mb-0">₦{{ number_format($withdrawals->where('is_approved', null)->sum('amount'), 2) }}</h2>
                             </div>
                             <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
                         </div>
@@ -149,13 +149,12 @@
                                         <small class="text-muted">{{ $withdrawal->currency }}</small>
                                     </td>
                                     <td>
-                                        @if($withdrawal->is_approved)
-                                            <span class="badge bg-success">Approved</span>
-                                            @if($withdrawal->processed_at)
-                                                <div class="small text-muted">{{ $withdrawal->processed_at->format('M d, H:i') }}</div>
-                                            @endif
-                                        @else
-                                            <span class="badge bg-warning">Pending</span>
+                                        <span class="badge {{ $withdrawal->status_badge_class }}">{{ $withdrawal->status_text }}</span>
+                                        @if($withdrawal->processed_at)
+                                            <div class="small text-muted">{{ $withdrawal->processed_at->format('M d, H:i') }}</div>
+                                        @endif
+                                        @if($withdrawal->processed_by)
+                                            <div class="small text-muted">by {{ $withdrawal->processed_by }}</div>
                                         @endif
                                     </td>
                                     <td>{{ $withdrawal->created_at->format('M d, Y') }}</td>

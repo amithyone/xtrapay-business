@@ -22,6 +22,7 @@ class Transfer extends Model
         'metadata',
         'type',
         'beneficiary_id',
+        'is_approved',
         'processed_by',
         'admin_notes',
         'processed_at',
@@ -32,6 +33,7 @@ class Transfer extends Model
         'amount' => 'decimal:2',
         'metadata' => 'array',
         'processed_at' => 'datetime',
+        'is_approved' => 'boolean',
     ];
 
     public function businessProfile()
@@ -42,5 +44,33 @@ class Transfer extends Model
     public function beneficiary()
     {
         return $this->belongsTo(Beneficiary::class);
+    }
+
+    /**
+     * Get the status text for display
+     */
+    public function getStatusTextAttribute()
+    {
+        if ($this->is_approved === true) {
+            return 'Approved';
+        } elseif ($this->is_approved === false) {
+            return 'Rejected';
+        } else {
+            return 'Pending';
+        }
+    }
+
+    /**
+     * Get the status badge class
+     */
+    public function getStatusBadgeClassAttribute()
+    {
+        if ($this->is_approved === true) {
+            return 'bg-success';
+        } elseif ($this->is_approved === false) {
+            return 'bg-danger';
+        } else {
+            return 'bg-warning';
+        }
     }
 }
