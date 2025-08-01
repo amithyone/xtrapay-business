@@ -12,12 +12,21 @@ class WithdrawalController extends Controller
 {
     public function index()
     {
-        $withdrawals = Transfer::where('business_profile_id', auth()->user()->businessProfile->id)
+        $user = auth()->user();
+        $businessProfile = $user->businessProfile;
+
+        // Check if business profile exists
+        if (!$businessProfile) {
+            return redirect()->route('business-profile.create')
+                ->with('error', 'Please complete your business profile before accessing withdrawals.');
+        }
+
+        $withdrawals = Transfer::where('business_profile_id', $businessProfile->id)
             ->where('type', 'withdrawal')
             ->latest()
             ->paginate(10);
 
-        $beneficiaries = auth()->user()->businessProfile->beneficiaries;
+        $beneficiaries = $businessProfile->beneficiaries;
 
         return view('withdrawals.index', compact('withdrawals', 'beneficiaries'));
     }
