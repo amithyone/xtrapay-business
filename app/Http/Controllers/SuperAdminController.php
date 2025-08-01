@@ -321,7 +321,19 @@ class SuperAdminController extends Controller
     public function showWithdrawal(Transfer $withdrawal)
     {
         $withdrawal->load(['businessProfile.user', 'beneficiary']);
-        return view('super-admin.withdrawals.show', compact('withdrawal'));
+        
+        // Get business balance information
+        $business = $withdrawal->businessProfile;
+        $balanceInfo = [
+            'withdrawable_balance' => $business->withdrawable_balance ?? 0,
+            'actual_balance' => $business->actual_balance ?? 0,
+            'total_balance' => $business->balance ?? 0,
+            'withdrawal_amount' => $withdrawal->amount,
+            'can_approve' => ($business->withdrawable_balance ?? 0) >= $withdrawal->amount,
+            'balance_shortfall' => max(0, $withdrawal->amount - ($business->withdrawable_balance ?? 0))
+        ];
+        
+        return view('super-admin.withdrawals.show', compact('withdrawal', 'balanceInfo'));
     }
 
     public function approveWithdrawal(Request $request, Transfer $withdrawal)
@@ -335,8 +347,22 @@ class SuperAdminController extends Controller
         try {
             // Check if business has sufficient withdrawable balance
             $business = $withdrawal->businessProfile;
-            if ($business->withdrawable_balance < $withdrawal->amount) {
-                throw new \Exception('Insufficient withdrawable balance');
+            
+            // Get current balances
+            $withdrawableBalance = $business->withdrawable_balance ?? 0;
+            $actualBalance = $business->actual_balance ?? 0;
+            $totalBalance = $business->balance ?? 0;
+            $withdrawalAmount = $withdrawal->amount;
+            
+            // Check if business has sufficient balance
+            if ($withdrawableBalance < $withdrawalAmount) {
+                $errorMessage = "Insufficient withdrawable balance. " .
+                    "Requested: ₦" . number_format($withdrawalAmount, 2) . ", " .
+                    "Available: ₦" . number_format($withdrawableBalance, 2) . ". " .
+                    "Business balances - Actual: ₦" . number_format($actualBalance, 2) . 
+                    ", Total: ₦" . number_format($totalBalance, 2);
+                
+                throw new \Exception($errorMessage);
             }
 
             // Update withdrawal
@@ -349,14 +375,17 @@ class SuperAdminController extends Controller
             ]);
 
             // Update business balances
-            $business->decrement('withdrawable_balance', $withdrawal->amount);
-            $business->increment('total_withdrawals', $withdrawal->amount);
+            $business->decrement('withdrawable_balance', $withdrawalAmount);
+            $business->increment('total_withdrawals', $withdrawalAmount);
 
             // Log the approval
             Log::info('Withdrawal approved by super admin', [
                 'withdrawal_id' => $withdrawal->id,
-                'amount' => $withdrawal->amount,
+                'amount' => $withdrawalAmount,
                 'business_id' => $business->id,
+                'business_name' => $business->business_name,
+                'withdrawable_balance_before' => $withdrawableBalance,
+                'withdrawable_balance_after' => $withdrawableBalance - $withdrawalAmount,
                 'approved_by' => auth()->id(),
                 'processing_method' => $validated['processing_method'],
             ]);
@@ -364,11 +393,18 @@ class SuperAdminController extends Controller
             DB::commit();
             return response()->json([
                 'success' => true,
-                'message' => 'Withdrawal approved successfully'
+                'message' => 'Withdrawal approved successfully. ' .
+                    'Withdrawable balance reduced from ₦' . number_format($withdrawableBalance, 2) . 
+                    ' to ₦' . number_format($withdrawableBalance - $withdrawalAmount, 2)
             ]);
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error('Error approving withdrawal: ' . $e->getMessage());
+            Log::error('Error approving withdrawal: ' . $e->getMessage(), [
+                'withdrawal_id' => $withdrawal->id,
+                'business_id' => $withdrawal->business_profile_id,
+                'amount' => $withdrawal->amount,
+                'error' => $e->getMessage()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Error approving withdrawal: ' . $e->getMessage()
