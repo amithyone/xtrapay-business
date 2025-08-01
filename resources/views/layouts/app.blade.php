@@ -30,6 +30,7 @@
         <link href="/css/pwa.css" rel="stylesheet">
         <link href="/css/dashboard.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <style>body { font-family: 'Inter', sans-serif; }</style>
         
         @stack('styles')

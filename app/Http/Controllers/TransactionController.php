@@ -84,6 +84,24 @@ class TransactionController extends Controller
         $startOfMonth = $now->copy()->startOfMonth();
         $startOfDay = $now->copy()->startOfDay();
 
+        // Get site distribution data for pie chart
+        $siteDistribution = Transaction::whereIn('site_id', $siteIds)
+            ->where('status', 'success')
+            ->with('site')
+            ->get()
+            ->groupBy('site_id')
+            ->map(function ($transactions, $siteId) {
+                $site = $transactions->first()->site;
+                return [
+                    'site_name' => $site ? $site->name : 'Unknown Site',
+                    'total_amount' => $transactions->sum('amount'),
+                    'transaction_count' => $transactions->count(),
+                    'site_id' => $siteId
+                ];
+            })
+            ->values()
+            ->toArray();
+
         return [
             'total_transactions' => Transaction::whereIn('site_id', $siteIds)->count(),
             'total_amount' => Transaction::whereIn('site_id', $siteIds)->sum('amount'),
@@ -105,6 +123,7 @@ class TransactionController extends Controller
                 ->where('status', 'pending')->count(),
             'failed_transactions' => Transaction::whereIn('site_id', $siteIds)
                 ->where('status', 'failed')->count(),
+            'site_distribution' => $siteDistribution,
         ];
     }
 

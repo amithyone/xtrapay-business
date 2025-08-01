@@ -102,6 +102,44 @@
             </div>
         </div>
 
+        <!-- Site Distribution Chart -->
+        @if(!empty($stats['site_distribution']))
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>Payment Gateway Distribution
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <canvas id="siteDistributionChart" width="400" height="200"></canvas>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="site-legend">
+                                    @foreach($stats['site_distribution'] as $index => $site)
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="legend-color me-2" style="width: 20px; height: 20px; background-color: {{ $colors[$index] ?? '#'.substr(md5($site['site_name']), 0, 6) }}; border-radius: 4px;"></div>
+                                        <div class="flex-grow-1">
+                                            <div class="fw-semibold">{{ $site['site_name'] }}</div>
+                                            <div class="text-muted small">
+                                                ₦{{ number_format($site['total_amount'], 2) }} 
+                                                ({{ $site['transaction_count'] }} transactions)
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
         <!-- Filters -->
         <div class="card mb-4">
             <div class="card-body">
@@ -591,7 +629,60 @@
                     document.getElementById('filterForm').submit();
                 });
             });
+
+            // Initialize pie chart if data exists
+            @if(!empty($stats['site_distribution']))
+            initializeSiteDistributionChart();
+            @endif
         });
+
+        // Initialize site distribution pie chart
+        function initializeSiteDistributionChart() {
+            const ctx = document.getElementById('siteDistributionChart').getContext('2d');
+            
+            const chartData = @json($stats['site_distribution']);
+            const colors = [
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+                '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+            ];
+
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: chartData.map(site => site.site_name),
+                    datasets: [{
+                        data: chartData.map(site => site.total_amount),
+                        backgroundColor: colors.slice(0, chartData.length),
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false // We have custom legend
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const site = chartData[context.dataIndex];
+                                    return [
+                                        site.site_name,
+                                        '₦' + Number(site.total_amount).toLocaleString('en-NG', {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2
+                                        }),
+                                        site.transaction_count + ' transactions'
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
     </script>
     @endpush
 
