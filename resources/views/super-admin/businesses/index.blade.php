@@ -234,9 +234,16 @@
                                             <a href="{{ route('super-admin.businesses.show', $business) }}" class="btn btn-sm btn-outline-info">
                                                 <i class="fas fa-eye"></i>
                                             </a>
+                                            <a href="{{ route('super-admin.businesses.edit', $business) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
                                             <button type="button" class="btn btn-sm btn-outline-primary" 
                                                     onclick="updateBalance({{ $business->id }}, '{{ $business->business_name }}', {{ $business->actual_balance }}, {{ $business->withdrawable_balance }})">
-                                                <i class="fas fa-edit"></i>
+                                                <i class="fas fa-wallet"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm {{ $business->is_verified ? 'btn-outline-warning' : 'btn-outline-success' }}" 
+                                                    onclick="toggleVerification({{ $business->id }}, '{{ $business->business_name }}', {{ $business->is_verified ? 'true' : 'false' }})">
+                                                <i class="fas {{ $business->is_verified ? 'fa-times' : 'fa-check' }}"></i>
                                             </button>
                                         </div>
                                     </td>
@@ -329,6 +336,48 @@
             document.getElementById('balance_notes').value = '';
             
             new bootstrap.Modal(document.getElementById('updateBalanceModal')).show();
+        }
+
+        function resetDailySavings(businessId) {
+            if (confirm('Are you sure you want to reset daily savings collection for this business?')) {
+                fetch(`/super-admin/businesses/${businessId}/savings/reset`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error resetting daily savings: ' + data.message);
+                    }
+                });
+            }
+        }
+
+        function toggleVerification(businessId, businessName, isVerified) {
+            const action = isVerified ? 'unverify' : 'verify';
+            if (confirm(`Are you sure you want to ${action} the business "${businessName}"?`)) {
+                fetch(`/super-admin/businesses/${businessId}/toggle-verification`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                });
+            }
         }
 
         document.getElementById('updateBalanceForm').addEventListener('submit', function(e) {

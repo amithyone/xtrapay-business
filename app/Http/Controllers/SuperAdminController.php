@@ -667,4 +667,83 @@ class SuperAdminController extends Controller
             'message' => 'Daily savings reset successfully'
         ]);
     }
+
+    /**
+     * Edit Business Details
+     */
+    public function editBusiness(BusinessProfile $business)
+    {
+        return view('super-admin.businesses.edit', compact('business'));
+    }
+
+    public function updateBusiness(Request $request, BusinessProfile $business)
+    {
+        $validated = $request->validate([
+            'business_name' => 'required|string|max:255',
+            'business_type' => 'required|string|max:255',
+            'industry' => 'required|string|max:255',
+            'registration_number' => 'nullable|string|max:255',
+            'tax_identification_number' => 'nullable|string|max:255',
+            'address' => 'nullable|string|max:500',
+            'city' => 'nullable|string|max:255',
+            'state' => 'nullable|string|max:255',
+            'country' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'website' => 'nullable|url|max:255',
+            'is_verified' => 'boolean',
+            'notes' => 'nullable|string'
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $business->update($validated);
+
+            // Log the update
+            Log::info('Business details updated by super admin', [
+                'business_id' => $business->id,
+                'business_name' => $business->business_name,
+                'updated_by' => auth()->id(),
+                'changes' => $validated
+            ]);
+
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'message' => 'Business details updated successfully'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Error updating business details: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating business details: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Verify/Unverify Business
+     */
+    public function toggleVerification(BusinessProfile $business)
+    {
+        $business->update([
+            'is_verified' => !$business->is_verified
+        ]);
+
+        $status = $business->is_verified ? 'verified' : 'unverified';
+        
+        Log::info("Business {$status} by super admin", [
+            'business_id' => $business->id,
+            'business_name' => $business->business_name,
+            'status' => $status,
+            'updated_by' => auth()->id()
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Business {$status} successfully",
+            'is_verified' => $business->is_verified
+        ]);
+    }
 } 

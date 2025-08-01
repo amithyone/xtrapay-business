@@ -272,6 +272,9 @@
                     </div>
                     <div class="card-body">
                         <div class="d-grid gap-2">
+                            <a href="{{ route('super-admin.businesses.edit', $business) }}" class="btn btn-outline-primary">
+                                <i class="fas fa-edit me-2"></i>Edit Business
+                            </a>
                             <a href="{{ route('super-admin.withdrawals.index') }}?search={{ $business->business_name }}" class="btn btn-outline-warning">
                                 <i class="fas fa-money-bill-wave me-2"></i>View Withdrawals
                             </a>
