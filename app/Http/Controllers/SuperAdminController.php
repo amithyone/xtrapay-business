@@ -674,6 +674,101 @@ class SuperAdminController extends Controller
     }
 
     /**
+     * Reset collection time for a business
+     */
+    public function resetCollectionTime(BusinessProfile $business)
+    {
+        try {
+            $savings = $business->savings;
+            if (!$savings) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No savings found for this business'
+                ]);
+            }
+
+            // Reset the last collection date to allow immediate collection
+            $savings->last_collection_date = null;
+            $savings->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Collection time reset successfully. Next collection can happen immediately.'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error resetting collection time: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Trigger next collection for a business
+     */
+    public function triggerNextCollection(BusinessProfile $business)
+    {
+        try {
+            $savings = $business->savings;
+            if (!$savings || !$savings->is_active) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No active savings found for this business'
+                ]);
+            }
+
+            // Check if business has sufficient balance
+            if ($business->balance < 40000) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Insufficient balance. Required: ₦40,000, Available: ₦' . number_format($business->balance, 2)
+                ]);
+            }
+
+            // Get a recent transaction to trigger collection
+            $transaction = Transaction::where('business_profile_id', $business->id)
+                ->where('status', 'success')
+                ->latest()
+                ->first();
+
+            if (!$transaction) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No successful transactions found for this business'
+                ]);
+            }
+
+            $savingsService = new SavingsCollectionService();
+            $result = $savingsService->processTransaction($transaction);
+
+            if ($result && $result['collected']) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Next collection triggered successfully',
+                    'data' => [
+                        'amount_collected' => $result['amount'],
+                        'business_balance_deducted' => $result['business_balance_deducted'],
+                        'current_savings' => $result['current_savings'],
+                        'progress' => $result['progress']
+                    ]
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Collection not due yet or insufficient balance'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error triggering next collection: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Edit Business Details
      */
     public function editBusiness(BusinessProfile $business)

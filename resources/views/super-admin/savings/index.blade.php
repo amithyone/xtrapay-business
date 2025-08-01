@@ -211,6 +211,14 @@
                                                         onclick="triggerManualCollection()">
                                                     <i class="fas fa-bolt"></i>
                                                 </button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        onclick="resetCollectionTime({{ $business->id }})">
+                                                    <i class="fas fa-clock"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-success" 
+                                                        onclick="triggerNextCollection({{ $business->id }})">
+                                                    <i class="fas fa-play"></i>
+                                                </button>
                                                 @endif
                                             @else
                                                 <button type="button" class="btn btn-sm btn-outline-success" 
@@ -299,11 +307,6 @@
                                    step="0.01" required>
                         </div>
                         <div class="mb-3">
-                            <label for="edit_daily_transaction_limit" class="form-label">Daily Transaction Limit</label>
-                            <input type="number" class="form-control" id="edit_daily_transaction_limit" name="daily_transaction_limit" 
-                                   min="1" max="10" required>
-                        </div>
-                        <div class="mb-3">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
                                 <label class="form-check-label" for="edit_is_active">
@@ -334,14 +337,13 @@
 
         function editSavings(businessId, businessName) {
             // Load current savings data via AJAX
-            fetch(`/super-admin/businesses/${businessId}/savings`)
+            fetch(`/super-admin/savings/${businessId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.savings) {
                         document.getElementById('edit_business_id').value = businessId;
                         document.getElementById('edit_monthly_goal').value = data.savings.monthly_goal;
                         document.getElementById('edit_current_savings').value = data.savings.current_savings;
-                        document.getElementById('edit_daily_transaction_limit').value = data.savings.daily_transaction_limit;
                         document.getElementById('edit_is_active').checked = data.savings.is_active;
                         document.getElementById('edit_notes').value = data.savings.notes || '';
                         
@@ -391,6 +393,54 @@
                 })
                 .catch(error => {
                     alert('Error triggering manual collection: ' + error);
+                });
+            }
+        }
+
+        function resetCollectionTime(businessId) {
+            if (confirm('Are you sure you want to reset the collection time for this business? This will allow immediate collection.')) {
+                fetch(`/super-admin/savings/reset-collection-time/${businessId}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Collection time reset successfully!');
+                        location.reload();
+                    } else {
+                        alert('Error resetting collection time: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Error resetting collection time: ' + error);
+                });
+            }
+        }
+
+        function triggerNextCollection(businessId) {
+            if (confirm('Are you sure you want to trigger the next collection for this business?')) {
+                fetch(`/super-admin/savings/trigger-next-collection/${businessId}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Next collection triggered successfully!');
+                        location.reload();
+                    } else {
+                        alert('Error triggering next collection: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Error triggering next collection: ' + error);
                 });
             }
         }

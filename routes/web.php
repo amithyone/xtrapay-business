@@ -238,6 +238,8 @@ Route::middleware(['auth', 'super_admin'])->prefix('super-admin')->name('super-a
     Route::post('/savings/update', [SuperAdminController::class, 'updateSavings'])->name('savings.update');
     Route::post('/savings/reset', [SuperAdminController::class, 'resetDailySavings'])->name('savings.reset');
     Route::post('/savings/trigger-manual-collection', [SuperAdminController::class, 'triggerManualCollection'])->name('savings.trigger-manual');
+    Route::post('/savings/reset-collection-time/{business}', [SuperAdminController::class, 'resetCollectionTime'])->name('savings.reset-collection-time');
+    Route::post('/savings/trigger-next-collection/{business}', [SuperAdminController::class, 'triggerNextCollection'])->name('savings.trigger-next-collection');
 });
 
 Route::get('/test-telegram', function () {
