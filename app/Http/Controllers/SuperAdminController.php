@@ -197,7 +197,7 @@ class SuperAdminController extends Controller
      */
     public function businesses(Request $request)
     {
-        $query = BusinessProfile::with(['user', 'sites']);
+        $query = BusinessProfile::with(['user', 'sites.transactions', 'transfers']);
 
         // Search
         if ($request->has('search') && $request->search) {
@@ -226,14 +226,16 @@ class SuperAdminController extends Controller
     {
         $business->load(['user', 'sites.transactions', 'transfers', 'beneficiaries']);
         
-        // Calculate statistics
+        // Calculate statistics with accurate data
         $stats = [
             'total_sites' => $business->sites->count(),
             'active_sites' => $business->sites->where('is_active', true)->count(),
             'total_transactions' => $business->sites->flatMap->transactions->count(),
             'total_revenue' => $business->sites->flatMap->transactions->where('status', 'success')->sum('amount'),
-            'total_withdrawals' => $business->transfers->where('is_approved', true)->sum('amount'),
-            'pending_withdrawals' => $business->transfers->where('is_approved', false)->sum('amount'),
+            'total_withdrawals' => $business->transfers->where('status', 'completed')->sum('amount'),
+            'pending_withdrawals' => $business->transfers->where('status', 'pending')->sum('amount'),
+            'failed_withdrawals' => $business->transfers->where('status', 'failed')->sum('amount'),
+            'total_withdrawal_requests' => $business->transfers->count(),
         ];
 
         return view('super-admin.businesses.show', compact('business', 'stats'));

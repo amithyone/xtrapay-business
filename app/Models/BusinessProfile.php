@@ -71,4 +71,38 @@ class BusinessProfile extends Model
     {
         return $this->hasMany(Beneficiary::class);
     }
+
+    /**
+     * Get total revenue from all sites' successful transactions
+     */
+    public function getTotalRevenueAttribute()
+    {
+        return $this->sites->flatMap->transactions
+            ->where('status', 'success')
+            ->sum('amount');
+    }
+
+    /**
+     * Get total withdrawals (completed)
+     */
+    public function getTotalWithdrawalsAttribute()
+    {
+        return $this->transfers->where('status', 'completed')->sum('amount');
+    }
+
+    /**
+     * Get pending withdrawals
+     */
+    public function getPendingWithdrawalsAttribute()
+    {
+        return $this->transfers->where('status', 'pending')->sum('amount');
+    }
+
+    /**
+     * Get failed withdrawals
+     */
+    public function getFailedWithdrawalsAttribute()
+    {
+        return $this->transfers->where('status', 'failed')->sum('amount');
+    }
 }
