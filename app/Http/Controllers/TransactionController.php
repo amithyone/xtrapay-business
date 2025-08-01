@@ -102,6 +102,56 @@ class TransactionController extends Controller
             ->values()
             ->toArray();
 
+        // Get daily chart data (last 30 days)
+        $dailyChartData = Transaction::whereIn('site_id', $siteIds)
+            ->where('status', 'success')
+            ->where('created_at', '>=', $now->copy()->subDays(30))
+            ->selectRaw('DATE(created_at) as date, SUM(amount) as total_amount, COUNT(*) as transaction_count')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'date' => $item->date,
+                    'amount' => $item->total_amount,
+                    'count' => $item->transaction_count
+                ];
+            })
+            ->toArray();
+
+        // Get monthly chart data (last 12 months)
+        $monthlyChartData = Transaction::whereIn('site_id', $siteIds)
+            ->where('status', 'success')
+            ->where('created_at', '>=', $now->copy()->subMonths(12))
+            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, SUM(amount) as total_amount, COUNT(*) as transaction_count')
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'month' => $item->month,
+                    'amount' => $item->total_amount,
+                    'count' => $item->transaction_count
+                ];
+            })
+            ->toArray();
+
+        // Get all-time chart data by year
+        $allTimeChartData = Transaction::whereIn('site_id', $siteIds)
+            ->where('status', 'success')
+            ->selectRaw('YEAR(created_at) as year, SUM(amount) as total_amount, COUNT(*) as transaction_count')
+            ->groupBy('year')
+            ->orderBy('year')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'year' => $item->year,
+                    'amount' => $item->total_amount,
+                    'count' => $item->transaction_count
+                ];
+            })
+            ->toArray();
+
         return [
             'total_transactions' => Transaction::whereIn('site_id', $siteIds)->count(),
             'total_amount' => Transaction::whereIn('site_id', $siteIds)->sum('amount'),
@@ -124,6 +174,9 @@ class TransactionController extends Controller
             'failed_transactions' => Transaction::whereIn('site_id', $siteIds)
                 ->where('status', 'failed')->count(),
             'site_distribution' => $siteDistribution,
+            'daily_chart_data' => $dailyChartData,
+            'monthly_chart_data' => $monthlyChartData,
+            'all_time_chart_data' => $allTimeChartData,
         ];
     }
 

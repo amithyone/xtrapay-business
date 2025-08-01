@@ -140,6 +140,51 @@
         </div>
         @endif
 
+        <!-- Charts Section -->
+        <div class="row g-4 mb-4">
+            <!-- Daily Chart -->
+            <div class="col-12 col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-line me-2"></i>Daily Revenue (Last 30 Days)
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="dailyChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Chart -->
+            <div class="col-12 col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>Monthly Revenue (Last 12 Months)
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="monthlyChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- All Time Chart -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-area me-2"></i>All-Time Revenue by Year
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="allTimeChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Filters -->
         <div class="card mb-4">
             <div class="card-body">
@@ -634,6 +679,19 @@
             @if(!empty($stats['site_distribution']))
             initializeSiteDistributionChart();
             @endif
+
+            // Initialize other charts
+            @if(!empty($stats['daily_chart_data']))
+            initializeDailyChart();
+            @endif
+
+            @if(!empty($stats['monthly_chart_data']))
+            initializeMonthlyChart();
+            @endif
+
+            @if(!empty($stats['all_time_chart_data']))
+            initializeAllTimeChart();
+            @endif
         });
 
         // Initialize site distribution pie chart
@@ -676,6 +734,166 @@
                                         }),
                                         site.transaction_count + ' transactions'
                                     ];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize daily chart
+        function initializeDailyChart() {
+            const ctx = document.getElementById('dailyChart').getContext('2d');
+            const chartData = @json($stats['daily_chart_data'] ?? []);
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.map(item => {
+                        const date = new Date(item.date);
+                        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }),
+                    datasets: [{
+                        label: 'Daily Revenue',
+                        data: chartData.map(item => item.amount),
+                        borderColor: '#36A2EB',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '₦' + Number(context.parsed.y).toLocaleString('en-NG', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    });
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₦' + Number(value).toLocaleString('en-NG');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize monthly chart
+        function initializeMonthlyChart() {
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            const chartData = @json($stats['monthly_chart_data'] ?? []);
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.map(item => {
+                        const [year, month] = item.month.split('-');
+                        const date = new Date(year, month - 1);
+                        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+                    }),
+                    datasets: [{
+                        label: 'Monthly Revenue',
+                        data: chartData.map(item => item.amount),
+                        backgroundColor: '#FF6384',
+                        borderColor: '#FF6384',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '₦' + Number(context.parsed.y).toLocaleString('en-NG', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    });
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₦' + Number(value).toLocaleString('en-NG');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize all-time chart
+        function initializeAllTimeChart() {
+            const ctx = document.getElementById('allTimeChart').getContext('2d');
+            const chartData = @json($stats['all_time_chart_data'] ?? []);
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.map(item => item.year),
+                    datasets: [{
+                        label: 'Annual Revenue',
+                        data: chartData.map(item => item.amount),
+                        borderColor: '#4BC0C0',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#4BC0C0',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '₦' + Number(context.parsed.y).toLocaleString('en-NG', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    });
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₦' + Number(value).toLocaleString('en-NG');
                                 }
                             }
                         }
