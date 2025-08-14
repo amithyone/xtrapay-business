@@ -38,56 +38,89 @@ class SavingsCollectionService
             return false;
         }
 
-        // Check if we can collect today (twice a day - every 12 hours)
+        // Check if we can collect today (daily goal of ₦50,000, can be collected 2-5 times)
         $lastCollection = $savings->last_collection_date;
         $now = now();
         
-        // If no last collection or more than 12 hours have passed
-        if (!$lastCollection || $now->diffInHours($lastCollection) >= 12) {
-            $collectionAmount = 40000; // Fixed ₦40,000
+        // Get today's collection count
+        $todayCollections = $savings->daily_collections_count ?? 0;
+        $maxDailyCollections = 5; // Maximum 5 collections per day
+        $dailyGoal = 80000; // ₦80,000 daily goal
+        
+        // Calculate remaining amount for today
+        $collectedToday = $savings->daily_collected_amount ?? 0;
+        $remainingToday = $dailyGoal - $collectedToday;
+        
+        // Check if we can collect more today
+        if ($todayCollections < $maxDailyCollections && $remainingToday > 0) {
+            // Calculate collection amount (minimum ₦15,000, maximum remaining amount)
+            $collectionAmount = min(max(15000, $remainingToday), 20000); // ₦15,000 to ₦20,000 per collection
             
             // Check if business has sufficient balance
             if ($businessProfile->balance >= $collectionAmount) {
                 // Deduct from business balance
                 $businessProfile->decrement('balance', $collectionAmount);
                 
-                // Add to savings
+                // Update savings with daily tracking
                 $savings->current_savings += $collectionAmount;
                 $savings->last_collection_date = $now;
+                
+                // Reset daily tracking if it's a new day
+                if ($lastCollection && $lastCollection->format('Y-m-d') !== $now->format('Y-m-d')) {
+                    $savings->daily_collections_count = 1;
+                    $savings->daily_collected_amount = $collectionAmount;
+                } else {
+                    // Same day, increment the counters
+                    $savings->daily_collections_count = $todayCollections + 1;
+                    $savings->daily_collected_amount = $collectedToday + $collectionAmount;
+                }
+                
                 $savings->save();
                 
-                Log::info('Savings collected - twice daily deduction', [
+                Log::info('✅ SAVINGS COLLECTED - Daily deduction', [
                     'transaction_id' => $transaction->id,
                     'business_id' => $businessProfile->id,
                     'collection_amount' => $collectionAmount,
                     'business_balance_after' => $businessProfile->balance,
                     'current_savings' => $savings->current_savings,
+                    'daily_collections_count' => $savings->daily_collections_count,
+                    'daily_collected_amount' => $savings->daily_collected_amount,
+                    'remaining_today' => $dailyGoal - $savings->daily_collected_amount,
                     'last_collection_date' => $savings->last_collection_date
                 ]);
 
                 return [
                     'collected' => true,
                     'amount' => $collectionAmount,
-                    'percentage' => 0, // Not percentage-based anymore
+                    'percentage' => 0,
                     'current_savings' => $savings->current_savings,
                     'progress' => $savings->progress_percentage,
                     'business_balance_deducted' => $collectionAmount,
-                    'collection_type' => 'twice_daily'
+                    'collection_type' => 'daily_goal',
+                    'daily_collections_count' => $savings->daily_collections_count,
+                    'daily_collected_amount' => $savings->daily_collected_amount,
+                    'remaining_today' => $dailyGoal - $savings->daily_collected_amount
                 ];
             } else {
-                Log::info('Insufficient business balance for savings collection', [
+                Log::info('⚠️ INSUFFICIENT BUSINESS BALANCE for savings collection', [
                     'transaction_id' => $transaction->id,
                     'business_id' => $businessProfile->id,
                     'required_amount' => $collectionAmount,
-                    'available_balance' => $businessProfile->balance
+                    'available_balance' => $businessProfile->balance,
+                    'daily_collections_count' => $todayCollections,
+                    'daily_collected_amount' => $collectedToday
                 ]);
             }
         } else {
-            Log::info('Savings collection not due yet - waiting for 12-hour interval', [
+            Log::info('⏰ SAVINGS COLLECTION NOT DUE - Daily limit reached or max collections hit', [
                 'transaction_id' => $transaction->id,
                 'business_id' => $businessProfile->id,
-                'last_collection' => $lastCollection,
-                'hours_since_last' => $now->diffInHours($lastCollection)
+                'daily_collections_count' => $todayCollections,
+                'max_daily_collections' => $maxDailyCollections,
+                'daily_collected_amount' => $collectedToday,
+                'daily_goal' => $dailyGoal,
+                'remaining_today' => $remainingToday,
+                'last_collection' => $lastCollection
             ]);
         }
 

@@ -27,6 +27,12 @@ class Kernel extends ConsoleKernel
                 ->everyTwelveHours()
                 ->withoutOverlapping()
                 ->runInBackground();
+
+        // Reset daily savings tracking at midnight
+        $schedule->command('savings:reset-daily')
+                ->dailyAt('00:00')
+                ->withoutOverlapping()
+                ->runInBackground();
     }
 
     /**

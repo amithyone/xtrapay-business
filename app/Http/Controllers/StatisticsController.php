@@ -27,9 +27,9 @@ class StatisticsController extends Controller
         $sites = $businessProfile->sites;
         $siteIds = $sites->pluck('id');
 
-        // Get date range (default to last 30 days)
-        $dateFrom = $request->get('date_from', Carbon::now()->subDays(30)->format('Y-m-d'));
-        $dateTo = $request->get('date_to', Carbon::now()->format('Y-m-d'));
+        // Get date range (default to last 7 days) - using Nigerian time
+        $dateFrom = $request->get('date_from', Carbon::now()->setTimezone('Africa/Lagos')->subDays(7)->format('Y-m-d'));
+        $dateTo = $request->get('date_to', Carbon::now()->setTimezone('Africa/Lagos')->format('Y-m-d'));
 
         // Get statistics
         $stats = $this->getStatistics($siteIds, $dateFrom, $dateTo);
@@ -37,10 +37,21 @@ class StatisticsController extends Controller
         // Get chart data
         $chartData = $this->getChartData($siteIds, $dateFrom, $dateTo);
         
-        // Get site performance
-        $sitePerformance = $this->getSitePerformance($siteIds, $dateFrom, $dateTo);
+        // Get payment method summary
+        $paymentMethodSummary = $this->getPaymentMethodSummary($siteIds, $dateFrom, $dateTo);
 
-        return view('statistics.index', compact('stats', 'chartData', 'sitePerformance', 'sites', 'dateFrom', 'dateTo'));
+        // Debug: Check total transactions in database
+        $totalTransactionsInDB = Transaction::count();
+        $totalSuccessfulInDB = Transaction::where('status', 'success')->count();
+        
+        \Log::info('Database Transaction Summary', [
+            'total_transactions' => $totalTransactionsInDB,
+            'total_successful' => $totalSuccessfulInDB,
+            'user_sites_count' => $siteIds->count(),
+            'date_range' => [$dateFrom, $dateTo]
+        ]);
+
+        return view('statistics.index', compact('stats', 'chartData', 'sites', 'dateFrom', 'dateTo', 'paymentMethodSummary'));
     }
 
     /**
@@ -48,91 +59,79 @@ class StatisticsController extends Controller
      */
     private function getStatistics($siteIds, $dateFrom, $dateTo)
     {
-        $startDate = Carbon::parse($dateFrom);
-        $endDate = Carbon::parse($dateTo);
+        // Convert to Nigerian timezone for accurate daily calculations
+        $startDate = Carbon::parse($dateFrom)->setTimezone('Africa/Lagos')->startOfDay();
+        $endDate = Carbon::parse($dateTo)->setTimezone('Africa/Lagos')->endOfDay();
+        $today = Carbon::now()->setTimezone('Africa/Lagos')->startOfDay();
 
-        $query = Transaction::whereIn('site_id', $siteIds)
-            ->whereBetween('created_at', [$startDate, $endDate->endOfDay()]);
+        // Today's statistics
+        $dailySuccessfulTransactions = Transaction::whereIn('site_id', $siteIds)
+            ->where('status', 'success')
+            ->whereDate('created_at', $today->format('Y-m-d'))
+            ->count();
 
-        $totalTransactions = $query->count();
-        $totalAmount = $query->sum('amount');
-        $successfulTransactions = $query->where('status', 'success')->count();
-        $successfulAmount = $query->where('status', 'success')->sum('amount');
-        $pendingTransactions = $query->where('status', 'pending')->count();
-        $pendingAmount = $query->where('status', 'pending')->sum('amount');
-        $failedTransactions = $query->where('status', 'failed')->count();
+        // Log for debugging
+        \Log::info('Daily Statistics Calculation', [
+            'site_ids' => $siteIds,
+            'today_date' => $today->format('Y-m-d'),
+            'daily_successful_transactions' => $dailySuccessfulTransactions,
+            'query' => Transaction::whereIn('site_id', $siteIds)
+                ->where('status', 'success')
+                ->whereDate('created_at', $today->format('Y-m-d'))
+                ->toSql()
+        ]);
 
-        // Calculate averages
-        $averageTransactionValue = $totalTransactions > 0 ? $totalAmount / $totalTransactions : 0;
-        $successRate = $totalTransactions > 0 ? ($successfulTransactions / $totalTransactions) * 100 : 0;
+        $dailyPendingTransactions = Transaction::whereIn('site_id', $siteIds)
+            ->where('status', 'pending')
+            ->whereDate('created_at', $today->format('Y-m-d'))
+            ->count();
 
-        // Get daily averages
-        $daysInRange = $startDate->diffInDays($endDate) + 1;
-        $dailyAverageTransactions = $daysInRange > 0 ? $totalTransactions / $daysInRange : 0;
-        $dailyAverageAmount = $daysInRange > 0 ? $totalAmount / $daysInRange : 0;
+        $dailyTotalTransactions = $dailySuccessfulTransactions + $dailyPendingTransactions;
+        $dailySuccessRate = $dailyTotalTransactions > 0 ? ($dailySuccessfulTransactions / $dailyTotalTransactions) * 100 : 0;
+
+        $dailyTotalProcessed = Transaction::whereIn('site_id', $siteIds)
+            ->whereDate('created_at', $today->format('Y-m-d'))
+            ->sum('amount');
+
+        // Monthly successful transactions (current month)
+        $currentMonth = Carbon::now()->setTimezone('Africa/Lagos')->startOfMonth();
+        $monthlySuccessfulTransactions = Transaction::whereIn('site_id', $siteIds)
+            ->where('status', 'success')
+            ->whereBetween('created_at', [$currentMonth, Carbon::now()->setTimezone('Africa/Lagos')])
+            ->count();
+
+        // Monthly total processed amount
+        $monthlyTotalProcessed = Transaction::whereIn('site_id', $siteIds)
+            ->whereBetween('created_at', [$currentMonth, Carbon::now()->setTimezone('Africa/Lagos')])
+            ->sum('amount');
 
         return [
-            'total_transactions' => $totalTransactions,
-            'total_amount' => $totalAmount,
-            'successful_transactions' => $successfulTransactions,
-            'successful_amount' => $successfulAmount,
-            'pending_transactions' => $pendingTransactions,
-            'pending_amount' => $pendingAmount,
-            'failed_transactions' => $failedTransactions,
-            'average_transaction_value' => $averageTransactionValue,
-            'success_rate' => $successRate,
-            'daily_average_transactions' => $dailyAverageTransactions,
-            'daily_average_amount' => $dailyAverageAmount,
+            'daily_successful_transactions' => $dailySuccessfulTransactions,
+            'daily_pending_transactions' => $dailyPendingTransactions,
+            'daily_success_rate' => $dailySuccessRate,
+            'daily_total_processed' => $dailyTotalProcessed,
+            'monthly_successful_transactions' => $monthlySuccessfulTransactions,
+            'monthly_total_processed' => $monthlyTotalProcessed,
             'date_range' => [
                 'from' => $startDate->format('M d, Y'),
-                'to' => $endDate->format('M d, Y'),
-                'days' => $daysInRange
+                'to' => $endDate->format('M d, Y')
             ]
         ];
     }
 
     /**
-     * Get chart data for various charts
+     * Get chart data
      */
     private function getChartData($siteIds, $dateFrom, $dateTo)
     {
-        $startDate = Carbon::parse($dateFrom);
-        $endDate = Carbon::parse($dateTo);
+        // Convert to Nigerian timezone for accurate daily calculations
+        $startDate = Carbon::parse($dateFrom)->setTimezone('Africa/Lagos')->startOfDay();
+        $endDate = Carbon::parse($dateTo)->setTimezone('Africa/Lagos')->endOfDay();
+        $today = Carbon::now()->setTimezone('Africa/Lagos')->startOfDay();
 
-        // Daily revenue chart
-        $dailyRevenue = Transaction::whereIn('site_id', $siteIds)
-            ->where('status', 'success')
-            ->whereBetween('created_at', [$startDate, $endDate->endOfDay()])
-            ->selectRaw('DATE(created_at) as date, SUM(amount) as total_amount, COUNT(*) as transaction_count')
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'date' => Carbon::parse($item->date)->format('M d'),
-                    'amount' => $item->total_amount,
-                    'count' => $item->transaction_count
-                ];
-            });
-
-        // Payment method distribution
-        $paymentMethods = Transaction::whereIn('site_id', $siteIds)
-            ->whereBetween('created_at', [$startDate, $endDate->endOfDay()])
-            ->selectRaw('payment_method, COUNT(*) as count, SUM(amount) as total_amount')
-            ->groupBy('payment_method')
-            ->orderByDesc('count')
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'method' => ucfirst($item->payment_method),
-                    'count' => $item->count,
-                    'amount' => $item->total_amount
-                ];
-            });
-
-        // Status distribution
-        $statusDistribution = Transaction::whereIn('site_id', $siteIds)
-            ->whereBetween('created_at', [$startDate, $endDate->endOfDay()])
+        // Transaction distribution for today (pie chart)
+        $transactionDistribution = Transaction::whereIn('site_id', $siteIds)
+            ->whereDate('created_at', $today->format('Y-m-d'))
             ->selectRaw('status, COUNT(*) as count')
             ->groupBy('status')
             ->get()
@@ -143,65 +142,167 @@ class StatisticsController extends Controller
                 ];
             });
 
-        // Hourly distribution
-        $hourlyDistribution = Transaction::whereIn('site_id', $siteIds)
-            ->whereBetween('created_at', [$startDate, $endDate->endOfDay()])
-            ->selectRaw('HOUR(created_at) as hour, COUNT(*) as count')
-            ->groupBy('hour')
-            ->orderBy('hour')
+        // Pending vs Successful daily comparison (last 7 days)
+        $pendingVsSuccessful = collect();
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::now()->setTimezone('Africa/Lagos')->subDays($i)->startOfDay();
+            
+            $successful = Transaction::whereIn('site_id', $siteIds)
+                ->where('status', 'success')
+                ->whereDate('created_at', $date->format('Y-m-d'))
+                ->count();
+
+            $pending = Transaction::whereIn('site_id', $siteIds)
+                ->where('status', 'pending')
+                ->whereDate('created_at', $date->format('Y-m-d'))
+                ->count();
+
+            $pendingVsSuccessful->push([
+                'date' => $date->format('M d'),
+                'successful' => $successful,
+                'pending' => $pending
+            ]);
+        }
+
+        // Daily payment method processing (today)
+        $dailyPaymentMethods = Transaction::whereIn('site_id', $siteIds)
+            ->whereDate('created_at', $today->format('Y-m-d'))
+            ->selectRaw('payment_method, SUM(amount) as total_amount')
+            ->groupBy('payment_method')
+            ->orderByDesc('total_amount')
+            ->limit(5)
             ->get()
             ->map(function ($item) {
                 return [
-                    'hour' => $item->hour . ':00',
-                    'count' => $item->count
+                    'method' => ucfirst($item->payment_method),
+                    'amount' => $item->total_amount
                 ];
             });
 
+        // Weekly payment method processing (past 7 days)
+        $weeklyPaymentMethods = $this->getWeeklyPaymentMethodData($siteIds);
+
         return [
-            'daily_revenue' => $dailyRevenue,
-            'payment_methods' => $paymentMethods,
-            'status_distribution' => $statusDistribution,
-            'hourly_distribution' => $hourlyDistribution
+            'transaction_distribution' => $transactionDistribution,
+            'pending_vs_successful' => $pendingVsSuccessful,
+            'daily_payment_methods' => $dailyPaymentMethods,
+            'weekly_payment_methods' => $weeklyPaymentMethods
         ];
     }
 
     /**
-     * Get site performance data
+     * Get weekly payment method data
      */
-    private function getSitePerformance($siteIds, $dateFrom, $dateTo)
+    private function getWeeklyPaymentMethodData($siteIds)
     {
-        $startDate = Carbon::parse($dateFrom);
-        $endDate = Carbon::parse($dateTo);
+        $methods = ['payvibe', 'xtrapay'];
+        $datasets = [];
+        $labels = [];
 
-        return Site::whereIn('id', $siteIds)
-            ->with(['transactions' => function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('created_at', [$startDate, $endDate->endOfDay()]);
-            }])
-            ->get()
-            ->map(function ($site) {
-                $transactions = $site->transactions;
-                $totalAmount = $transactions->sum('amount');
-                $successfulAmount = $transactions->where('status', 'success')->sum('amount');
-                $successRate = $transactions->count() > 0 
-                    ? ($transactions->where('status', 'success')->count() / $transactions->count()) * 100 
-                    : 0;
+        // Generate labels for past 7 days
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::now()->setTimezone('Africa/Lagos')->subDays($i);
+            $labels[] = $date->format('M d');
+        }
 
-                return [
-                    'id' => $site->id,
-                    'name' => $site->name,
-                    'url' => $site->url,
-                    'total_transactions' => $transactions->count(),
-                    'total_amount' => $totalAmount,
-                    'successful_amount' => $successfulAmount,
-                    'success_rate' => $successRate,
-                    'is_active' => $site->is_active
-                ];
-            })
-            ->sortByDesc('total_amount');
+        // Get data for each payment method
+        foreach ($methods as $index => $method) {
+            $data = [];
+            for ($i = 6; $i >= 0; $i--) {
+                $date = Carbon::now()->setTimezone('Africa/Lagos')->subDays($i)->startOfDay();
+                
+                $amount = Transaction::whereIn('site_id', $siteIds)
+                    ->where('payment_method', $method)
+                    ->whereDate('created_at', $date->format('Y-m-d'))
+                    ->sum('amount');
+
+                $data[] = $amount;
+            }
+
+            $datasets[] = [
+                'label' => ucfirst($method),
+                'data' => $data,
+                'borderColor' => $index === 0 ? '#3b82f6' : '#10b981',
+                'backgroundColor' => $index === 0 ? '#3b82f620' : '#10b98120',
+                'tension' => 0.4,
+                'fill' => false
+            ];
+        }
+
+        return [
+            'labels' => $labels,
+            'datasets' => $datasets
+        ];
     }
 
     /**
-     * Get AJAX data for charts
+     * Get payment method summary
+     */
+    private function getPaymentMethodSummary($siteIds, $dateFrom, $dateTo)
+    {
+        $today = Carbon::now()->setTimezone('Africa/Lagos')->startOfDay();
+        $weekAgo = Carbon::now()->setTimezone('Africa/Lagos')->subDays(7)->startOfDay();
+
+        $methods = [
+            'payvibe' => ['name' => 'PayVibe', 'icon' => 'fa-credit-card'],
+            'xtrapay' => ['name' => 'XtraPay', 'icon' => 'fa-wallet']
+        ];
+
+        $summary = [];
+
+        foreach ($methods as $methodKey => $methodInfo) {
+            // Today's data
+            $todayTransactions = Transaction::whereIn('site_id', $siteIds)
+                ->where('payment_method', $methodKey)
+                ->whereDate('created_at', $today->format('Y-m-d'))
+                ->count();
+
+            $todayAmount = Transaction::whereIn('site_id', $siteIds)
+                ->where('payment_method', $methodKey)
+                ->whereDate('created_at', $today->format('Y-m-d'))
+                ->sum('amount');
+
+            // Past 7 days data
+            $weekTransactions = Transaction::whereIn('site_id', $siteIds)
+                ->where('payment_method', $methodKey)
+                ->whereBetween('created_at', [$weekAgo, $today])
+                ->count();
+
+            $weekAmount = Transaction::whereIn('site_id', $siteIds)
+                ->where('payment_method', $methodKey)
+                ->whereBetween('created_at', [$weekAgo, $today])
+                ->sum('amount');
+
+            // Success rate
+            $totalTransactions = Transaction::whereIn('site_id', $siteIds)
+                ->where('payment_method', $methodKey)
+                ->whereBetween('created_at', [$weekAgo, $today])
+                ->count();
+
+            $successfulTransactions = Transaction::whereIn('site_id', $siteIds)
+                ->where('payment_method', $methodKey)
+                ->where('status', 'success')
+                ->whereBetween('created_at', [$weekAgo, $today])
+                ->count();
+
+            $successRate = $totalTransactions > 0 ? ($successfulTransactions / $totalTransactions) * 100 : 0;
+
+            $summary[] = [
+                'name' => $methodInfo['name'],
+                'icon' => $methodInfo['icon'],
+                'today_transactions' => $todayTransactions,
+                'today_amount' => $todayAmount,
+                'week_transactions' => $weekTransactions,
+                'week_amount' => $weekAmount,
+                'success_rate' => $successRate
+            ];
+        }
+
+        return $summary;
+    }
+
+    /**
+     * Get chart data via AJAX
      */
     public function getChartDataAjax(Request $request)
     {
@@ -209,12 +310,14 @@ class StatisticsController extends Controller
         $businessProfile = $user->businessProfile;
         
         if (!$businessProfile) {
-            return response()->json(['error' => 'No business profile found'], 404);
+            return response()->json(['error' => 'Business profile not found'], 404);
         }
 
-        $siteIds = $businessProfile->sites->pluck('id');
-        $dateFrom = $request->get('date_from', Carbon::now()->subDays(30)->format('Y-m-d'));
-        $dateTo = $request->get('date_to', Carbon::now()->format('Y-m-d'));
+        $sites = $businessProfile->sites;
+        $siteIds = $sites->pluck('id');
+
+        $dateFrom = $request->get('date_from', Carbon::now()->setTimezone('Africa/Lagos')->subDays(7)->format('Y-m-d'));
+        $dateTo = $request->get('date_to', Carbon::now()->setTimezone('Africa/Lagos')->format('Y-m-d'));
 
         $chartData = $this->getChartData($siteIds, $dateFrom, $dateTo);
 

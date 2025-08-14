@@ -15,6 +15,9 @@ class ProcessSavingsCollection implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $connection = 'sync';
+    public $timeout = 120;
+
     protected $transaction;
 
     /**

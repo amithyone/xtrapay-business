@@ -161,8 +161,16 @@ class WebhookController extends Controller
                         'site' => $site->name
                     ]);
                     
-                    // Dispatch savings collection job for successful transactions
-                    \App\Jobs\ProcessSavingsCollection::dispatch($existingTransaction);
+                    // Process savings collection for successful transactions
+                    try {
+                        $savingsService = app(\App\Services\SavingsCollectionService::class);
+                        $savingsService->processTransaction($existingTransaction);
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to process savings collection', [
+                            'transaction_id' => $existingTransaction->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
                     
                     // Send Telegram notification for successful transaction
                     $this->sendTelegramNotification($existingTransaction);
@@ -223,8 +231,16 @@ class WebhookController extends Controller
                     'site' => $site->name
                 ]);
                 
-                // Dispatch savings collection job for successful transactions
-                \App\Jobs\ProcessSavingsCollection::dispatch($transaction);
+                // Process savings collection for successful transactions
+                try {
+                    $savingsService = app(\App\Services\SavingsCollectionService::class);
+                    $savingsService->processTransaction($transaction);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to process savings collection', [
+                        'transaction_id' => $transaction->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
                 
                 // Send Telegram notification for successful transaction
                 $this->sendTelegramNotification($transaction);
@@ -303,53 +319,85 @@ class WebhookController extends Controller
     }
 
     /**
-     * Send Telegram notification for successful transaction
-     */
-    private function sendTelegramNotification(Transaction $transaction)
-    {
-        try {
-            $businessProfile = $transaction->businessProfile;
-            if (!$businessProfile || !$businessProfile->telegram_chat_id || !$businessProfile->telegram_bot_token) {
-                Log::info('Telegram notification skipped - no chat ID or bot token configured', [
-                    'transaction_id' => $transaction->id,
-                    'business_profile_id' => $businessProfile ? $businessProfile->id : null
-                ]);
-                return;
-            }
+ * Send Telegram notification for successful transaction
+ */
+private function sendTelegramNotification(Transaction $transaction)
+{
+    try {
+        $businessProfile = $transaction->businessProfile;
 
-            $message = "🎉 Transaction Successful!\n\n" .
-                      "💰 Amount: ₦" . number_format($transaction->amount, 2) . "\n" .
-                      "📝 Reference: {$transaction->reference}\n" .
-                      "🏢 Site: {$transaction->site->name}\n" .
-                      "📅 Date: " . $transaction->created_at->format('M d, Y H:i') . "\n" .
-                      "💳 Payment Method: {$transaction->payment_method}";
-
-            $response = Http::post("https://api.telegram.org/bot{$businessProfile->telegram_bot_token}/sendMessage", [
-                'chat_id' => $businessProfile->telegram_chat_id,
-                'text' => $message,
-                'parse_mode' => 'HTML'
-            ]);
-
-            $result = $response->json();
-
-            if ($result && isset($result['ok']) && $result['ok']) {
-                Log::info('Telegram notification sent successfully', [
-                    'transaction_id' => $transaction->id,
-                    'message_id' => $result['result']['message_id'],
-                    'business_profile_id' => $businessProfile->id
-                ]);
-            } else {
-                Log::error('Failed to send Telegram notification', [
-                    'transaction_id' => $transaction->id,
-                    'response' => $result,
-                    'business_profile_id' => $businessProfile->id
-                ]);
-            }
-        } catch (\Exception $e) {
-            Log::error('Error sending Telegram notification', [
+        // Check if bot token and chat ID are set
+        if (!$businessProfile || !$businessProfile->telegram_chat_id || !$businessProfile->telegram_bot_token) {
+            Log::info('⚠️ TELEGRAM NOTIFICATION SKIPPED - No chat ID or bot token configured', [
                 'transaction_id' => $transaction->id,
-                'error' => $e->getMessage()
+                'business_profile_id' => $businessProfile ? $businessProfile->id : null,
+                'has_chat_id' => $businessProfile ? !empty($businessProfile->telegram_chat_id) : false,
+                'has_bot_token' => $businessProfile ? !empty($businessProfile->telegram_bot_token) : false,
+                'amount' => $transaction->amount,
+                'reference' => $transaction->reference
+            ]);
+            return;
+        }
+
+        $message = "🎉 Transaction Successful!\n\n" .
+                  "💰 Amount: ₦" . number_format($transaction->amount, 2) . "\n" .
+                  "📝 Reference: {$transaction->reference}\n" .
+                  "🏢 Site: {$transaction->site->name}\n" .
+                  "📅 Date: " . $transaction->created_at->format('M d, Y H:i') . "\n" .
+                  "💳 Payment Method: {$transaction->payment_method}";
+
+        // Log that we're about to send the notification
+        Log::info('📤 SENDING TELEGRAM NOTIFICATION', [
+            'transaction_id' => $transaction->id,
+            'amount' => $transaction->amount,
+            'reference' => $transaction->reference,
+            'site' => $transaction->site->name,
+            'chat_id' => $businessProfile->telegram_chat_id
+        ]);
+
+        // Send POST request to Telegram API
+        $response = Http::post("https://api.telegram.org/bot{$businessProfile->telegram_bot_token}/sendMessage", [
+            'chat_id' => $businessProfile->telegram_chat_id,
+            'text' => $message,
+            'parse_mode' => 'HTML'
+        ]);
+
+        // Decode response
+        $result = $response->json();
+
+        // Check for success
+        if ($response->ok() && isset($result['ok']) && $result['ok'] === true && isset($result['result']['message_id'])) {
+            Log::info('✅ TELEGRAM NOTIFICATION SENT SUCCESSFULLY!', [
+                'transaction_id' => $transaction->id,
+                'message_id' => $result['result']['message_id'],
+                'business_profile_id' => $businessProfile->id,
+                'amount' => $transaction->amount,
+                'reference' => $transaction->reference,
+                'site' => $transaction->site->name,
+                'payment_method' => $transaction->payment_method,
+                'chat_id' => $businessProfile->telegram_chat_id
+            ]);
+            
+            // Also log a simple message for easy visibility
+            Log::info("📱 Telegram notification sent for transaction {$transaction->reference} - Amount: ₦" . number_format($transaction->amount, 2));
+        } else {
+            // Defensive logging if Telegram API response fails or is malformed
+            Log::error('❌ FAILED TO SEND TELEGRAM NOTIFICATION', [
+                'transaction_id' => $transaction->id,
+                'response' => $result,
+                'http_status' => $response->status(),
+                'business_profile_id' => $businessProfile->id,
+                'amount' => $transaction->amount,
+                'reference' => $transaction->reference
             ]);
         }
+
+    } catch (\Exception $e) {
+        Log::error('Error sending Telegram notification', [
+            'transaction_id' => $transaction->id,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
     }
-} 
+}
+}

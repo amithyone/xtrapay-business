@@ -15,6 +15,8 @@ class BusinessSavings extends Model
         'monthly_goal',
         'current_savings',
         'last_collection_date',
+        'daily_collections_count',
+        'daily_collected_amount',
         'is_active',
         'notes'
     ];
@@ -23,6 +25,8 @@ class BusinessSavings extends Model
         'monthly_goal' => 'decimal:2',
         'current_savings' => 'decimal:2',
         'last_collection_date' => 'datetime',
+        'daily_collections_count' => 'integer',
+        'daily_collected_amount' => 'decimal:2',
         'is_active' => 'boolean'
     ];
 
@@ -78,15 +82,35 @@ class BusinessSavings extends Model
     }
 
     /**
-     * Check if savings collection is due (every 12 hours)
+     * Check if savings collection is due (daily goal of ₦80,000, max 5 collections per day)
      */
     public function isCollectionDue(): bool
     {
+        $dailyGoal = 80000; // ₦80,000 daily goal
+        $maxDailyCollections = 5;
+        
+        // If no last collection, we can collect
         if (!$this->last_collection_date) {
             return true;
         }
         
-        return now()->diffInHours($this->last_collection_date) >= 12;
+        // Check if it's a new day
+        $lastCollectionDate = $this->last_collection_date->format('Y-m-d');
+        $today = now()->format('Y-m-d');
+        
+        if ($lastCollectionDate !== $today) {
+            // New day, reset daily tracking and allow collection
+            $this->daily_collections_count = 0;
+            $this->daily_collected_amount = 0;
+            $this->save();
+            return true;
+        }
+        
+        // Same day, check if we can collect more
+        $collectedToday = $this->daily_collected_amount ?? 0;
+        $collectionsToday = $this->daily_collections_count ?? 0;
+        
+        return $collectedToday < $dailyGoal && $collectionsToday < $maxDailyCollections;
     }
 
     /**
