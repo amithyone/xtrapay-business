@@ -52,10 +52,11 @@ class AutoSavingsCollection extends Command
             return 0;
         }
 
-        // Check if business has sufficient balance
-        if ($businessProfile->balance < 40000) {
+        // Check if business has sufficient balance (minimum ₦15,000 for collection)
+        $minBalanceRequired = 15000;
+        if ((float) $businessProfile->balance < $minBalanceRequired) {
             $this->warn("⚠️  Insufficient balance for Business ID {$businessId}");
-            $this->info("💰 Required: ₦40,000, Available: ₦" . number_format($businessProfile->balance, 2));
+            $this->info("💰 Required: ₦" . number_format($minBalanceRequired, 2) . ", Available: ₦" . number_format($businessProfile->balance, 2));
             return 0;
         }
 
