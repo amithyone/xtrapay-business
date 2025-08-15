@@ -57,15 +57,18 @@ class SavingsCollectionService
             $collectionAmount = min(max(15000, $remainingToday), 20000); // ₦15,000 to ₦20,000 per collection
             
             // Check if business has sufficient balance
+            $businessBalance = (float) $businessProfile->balance;
+            $requiredAmount = (float) $collectionAmount;
+            
             Log::info('🔍 BALANCE CHECK for savings collection', [
                 'business_id' => $businessProfile->id,
-                'business_balance' => $businessProfile->balance,
-                'required_amount' => $collectionAmount,
-                'balance_type' => gettype($businessProfile->balance),
-                'amount_type' => gettype($collectionAmount)
+                'business_balance' => $businessBalance,
+                'required_amount' => $requiredAmount,
+                'balance_type' => gettype($businessBalance),
+                'amount_type' => gettype($requiredAmount)
             ]);
             
-            if ($businessProfile->balance >= $collectionAmount) {
+            if ($businessBalance >= $requiredAmount) {
                 // Deduct from business balance
                 $businessProfile->decrement('balance', $collectionAmount);
                 
