@@ -44,6 +44,7 @@ class BusinessProfile extends Model
 
     protected $casts = [
         'is_verified' => 'boolean',
+        'balance' => 'decimal:2',
         'actual_balance' => 'decimal:2',
         'withdrawable_balance' => 'decimal:2',
         'total_revenue' => 'decimal:2',
