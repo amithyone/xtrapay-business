@@ -618,26 +618,48 @@ class SuperAdminController extends Controller
 
     public function initializeSavings(Request $request)
     {
-        $validated = $request->validate([
-            'business_id' => 'required|exists:business_profiles,id',
-            'monthly_goal' => 'required|numeric|min:0',
-            'daily_transaction_limit' => 'required|integer|min:1|max:10',
-            'is_active' => 'boolean'
-        ]);
+        try {
+            \Log::info('Initialize savings request received', $request->all());
+            
+            $validated = $request->validate([
+                'business_id' => 'required|exists:business_profiles,id',
+                'monthly_goal' => 'required|numeric|min:0',
+                'daily_transaction_limit' => 'required|integer|min:1|max:10',
+                'is_active' => 'boolean'
+            ]);
 
-        $business = BusinessProfile::findOrFail($validated['business_id']);
-        $savings = $this->savingsService->initializeSavings($business, $validated['monthly_goal']);
-        
-        $savings->update([
-            'daily_transaction_limit' => $validated['daily_transaction_limit'],
-            'is_active' => $validated['is_active'] ?? true
-        ]);
+            \Log::info('Validation passed', $validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Savings initialized successfully',
-            'savings' => $savings
-        ]);
+            $business = BusinessProfile::findOrFail($validated['business_id']);
+            \Log::info('Business found', ['business_id' => $business->id, 'business_name' => $business->business_name]);
+            
+            $savings = $this->savingsService->initializeSavings($business, $validated['monthly_goal']);
+            \Log::info('Savings initialized', ['savings_id' => $savings->id]);
+            
+            $savings->update([
+                'daily_transaction_limit' => $validated['daily_transaction_limit'],
+                'is_active' => $validated['is_active'] ?? true
+            ]);
+
+            \Log::info('Savings updated successfully');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Savings initialized successfully',
+                'savings' => $savings
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error initializing savings', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error initializing savings: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function updateSavings(Request $request, BusinessProfile $business)

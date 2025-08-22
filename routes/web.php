@@ -241,6 +241,16 @@ Route::middleware(['auth', 'super_admin'])->prefix('super-admin')->name('super-a
     Route::post('/savings/reset-collection-time/{business}', [SuperAdminController::class, 'resetCollectionTime'])->name('savings.reset-collection-time');
     Route::post('/savings/trigger-next-collection/{business}', [SuperAdminController::class, 'triggerNextCollection'])->name('savings.trigger-next-collection');
     Route::post('/savings/update-config', [SuperAdminController::class, 'updateSavingsConfig'])->name('savings.update-config');
+    
+    // Test route for debugging
+    Route::get('/test-auth', function () {
+        return response()->json([
+            'authenticated' => auth()->check(),
+            'user_id' => auth()->id(),
+            'is_super_admin' => auth()->user() ? auth()->user()->isSuperAdmin() : false,
+            'super_admin_record' => auth()->user() ? auth()->user()->superAdmin : null
+        ]);
+    })->name('test.auth');
 });
 
 Route::get('/test-telegram', function () {

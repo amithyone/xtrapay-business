@@ -555,6 +555,20 @@
             })
             .then(response => {
                 console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    return response.text().then(text => {
+                        console.log('Non-JSON response:', text);
+                        throw new Error('Server returned non-JSON response. Check server logs.');
+                    });
+                }
+                
                 return response.json();
             })
             .then(data => {
@@ -568,7 +582,7 @@
             })
             .catch(error => {
                 console.error('Fetch error:', error);
-                alert('Error initializing savings: ' + error);
+                alert('Error initializing savings: ' + error.message);
             });
         });
         } else {
