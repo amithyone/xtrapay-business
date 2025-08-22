@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Savings Initialization</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input, select { width: 100%; padding: 8px; margin-bottom: 10px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 20px; padding: 10px; border: 1px solid #ddd; background: #f9f9f9; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Test Savings Initialization</h1>
+    
+    <form id="testForm">
+        <div class="form-group">
+            <label for="business_id">Business ID:</label>
+            <input type="number" id="business_id" name="business_id" value="1" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="monthly_goal">Monthly Goal (₦):</label>
+            <input type="number" id="monthly_goal" name="monthly_goal" value="2400000" step="0.01" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="daily_transaction_limit">Daily Transaction Limit:</label>
+            <input type="number" id="daily_transaction_limit" name="daily_transaction_limit" value="5" min="1" max="10" required>
+        </div>
+        
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="is_active" name="is_active" checked>
+                Active Savings Collection
+            </label>
+        </div>
+        
+        <button type="submit">Test Initialize Savings</button>
+    </form>
+    
+    <div id="result" class="result" style="display: none;"></div>
+    
+    <script>
+        document.getElementById('testForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const resultDiv = document.getElementById('result');
+            
+            // Show loading
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            // First test the basic route
+            fetch('/super-admin/test-savings-init', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('Test route response status:', response.status);
+                return response.text();
+            })
+            .then(text => {
+                console.log('Test route response:', text);
+                resultDiv.innerHTML = '<h3>Test Route Response:</h3><pre>' + text + '</pre>';
+                
+                // Now test the actual savings route
+                return fetch('/super-admin/savings/initialize', {
+                    method: 'POST',
+                    body: formData
+                });
+            })
+            .then(response => {
+                console.log('Savings route response status:', response.status);
+                console.log('Savings route headers:', response.headers);
+                
+                const contentType = response.headers.get('content-type');
+                console.log('Content-Type:', contentType);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                if (!contentType || !contentType.includes('application/json')) {
+                    return response.text().then(text => {
+                        throw new Error('Server returned non-JSON response: ' + text.substring(0, 200));
+                    });
+                }
+                
+                return response.json();
+            })
+            .then(data => {
+                console.log('Savings route response data:', data);
+                resultDiv.innerHTML += '<h3>Savings Route Response:</h3><pre class="success">' + JSON.stringify(data, null, 2) + '</pre>';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                resultDiv.innerHTML += '<h3>Error:</h3><pre class="error">' + error.message + '</pre>';
+            });
+        });
+    </script>
+</body>
+</html>
