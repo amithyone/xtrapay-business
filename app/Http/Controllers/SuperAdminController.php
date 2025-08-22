@@ -619,7 +619,16 @@ class SuperAdminController extends Controller
     public function initializeSavings(Request $request)
     {
         try {
-            \Log::info('Initialize savings request received', $request->all());
+            \Log::info('Initialize savings request received', [
+                'all_data' => $request->all(),
+                'method' => $request->method(),
+                'content_type' => $request->header('Content-Type'),
+                'has_business_id' => $request->has('business_id'),
+                'business_id' => $request->input('business_id'),
+                'monthly_goal' => $request->input('monthly_goal'),
+                'daily_transaction_limit' => $request->input('daily_transaction_limit'),
+                'is_active' => $request->input('is_active')
+            ]);
             
             $validated = $request->validate([
                 'business_id' => 'required|exists:business_profiles,id',

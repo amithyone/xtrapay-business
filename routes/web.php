@@ -251,6 +251,15 @@ Route::middleware(['auth', 'super_admin'])->prefix('super-admin')->name('super-a
             'super_admin_record' => auth()->user() ? auth()->user()->superAdmin : null
         ]);
     })->name('test.auth');
+    
+    // Test route for savings initialize (without auth for debugging)
+    Route::post('/test-savings-init', function (Request $request) {
+        return response()->json([
+            'message' => 'Test route working',
+            'received_data' => $request->all(),
+            'method' => $request->method()
+        ]);
+    })->name('test.savings.init');
 });
 
 Route::get('/test-telegram', function () {
