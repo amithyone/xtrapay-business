@@ -44,15 +44,17 @@ class SavingsCollectionService
         
         // Get today's collection count
         $todayCollections = $savings->daily_collections_count ?? 0;
-        $maxDailyCollections = 5; // Maximum 5 collections per day
-        $dailyGoal = 80000; // ₦80,000 daily goal
+        $maxDailyCollections = \App\Models\SavingsConfig::getValue('max_daily_collections', 5);
+        $dailyGoal = \App\Models\SavingsConfig::getValue('daily_goal', 80000);
         
         // Calculate remaining amount for today
         $collectedToday = $savings->daily_collected_amount ?? 0;
         $remainingToday = $dailyGoal - $collectedToday;
         
         // Calculate collection amount first
-        $collectionAmount = min(max(15000, $remainingToday), 20000); // ₦15,000 to ₦20,000 per collection
+        $minCollectionAmount = \App\Models\SavingsConfig::getValue('min_collection_amount', 15000);
+        $maxCollectionAmount = \App\Models\SavingsConfig::getValue('max_collection_amount', 20000);
+        $collectionAmount = min(max($minCollectionAmount, $remainingToday), $maxCollectionAmount);
         $businessBalance = (float) $businessProfile->balance;
         $requiredAmount = (float) $collectionAmount;
         

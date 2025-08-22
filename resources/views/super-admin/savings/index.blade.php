@@ -60,11 +60,11 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="card-title mb-1">Collection Amount</h6>
-                                <h2 class="mb-0">₦40,000</h2>
+                                <h2 class="mb-0">₦{{ number_format($configValues['min_collection_amount'], 0) }}-{{ number_format($configValues['max_collection_amount'], 0) }}</h2>
                             </div>
                             <i class="fas fa-clock fa-2x opacity-75"></i>
                         </div>
-                        <small class="opacity-75">Twice Daily</small>
+                        <small class="opacity-75">{{ ucfirst(str_replace('_', ' ', $configValues['collection_frequency'])) }}</small>
                     </div>
                 </div>
             </div>
@@ -81,17 +81,44 @@
                 <div class="row align-items-center">
                     <div class="col-md-8">
                         <p class="mb-2">
-                            <strong>How it works:</strong> The system automatically deducts ₦40,000 from business balance twice a day (every 12 hours) 
+                            <strong>How it works:</strong> The system automatically deducts ₦{{ number_format($configValues['min_collection_amount'], 0) }}-{{ number_format($configValues['max_collection_amount'], 0) }} from business balance {{ $configValues['collection_frequency'] === 'twice_daily' ? 'twice a day' : ($configValues['collection_frequency'] === 'once_daily' ? 'once a day' : 'hourly') }} (every {{ $configValues['collection_interval_hours'] }} hours) 
                             and adds it to the hidden savings account. You can manually trigger a collection if needed.
                         </p>
                         <small class="text-muted">
                             <i class="fas fa-info-circle me-1"></i>
-                            Only works for Business ID 1. Collection will only happen if sufficient balance is available.
+                            Only works for Business ID 1. Collection will only happen if sufficient balance is available (minimum ₦{{ number_format($configValues['min_balance_required'], 0) }}).
                         </small>
                     </div>
                     <div class="col-md-4 text-end">
                         <button type="button" class="btn btn-primary" onclick="triggerManualCollection()">
                             <i class="fas fa-bolt me-2"></i>Trigger Collection Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Savings Configuration Management -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cog me-2"></i>Savings Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <p class="mb-2">
+                            <strong>Dynamic Configuration:</strong> All savings parameters can be adjusted here. Changes take effect immediately for new collections.
+                        </p>
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            These settings control how the automatic savings collection works across all businesses.
+                        </small>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button type="button" class="btn btn-outline-primary" onclick="openConfigModal()">
+                            <i class="fas fa-edit me-2"></i>Edit Configuration
                         </button>
                     </div>
                 </div>
@@ -328,6 +355,63 @@
         </div>
     </div>
 
+    <!-- Configuration Modal -->
+    <div class="modal fade" id="configModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Savings Configuration</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="configForm">
+                    <div class="modal-body">
+                        <div class="row">
+                            @foreach($savingsConfigs as $config)
+                            <div class="col-md-6 mb-3">
+                                <label for="config_{{ $config->key }}" class="form-label">
+                                    {{ ucwords(str_replace('_', ' ', $config->key)) }}
+                                    @if($config->type === 'float')
+                                        <span class="text-muted">(₦)</span>
+                                    @elseif($config->type === 'integer')
+                                        <span class="text-muted">(Number)</span>
+                                    @endif
+                                </label>
+                                @if($config->type === 'boolean')
+                                    <select class="form-control" id="config_{{ $config->key }}" name="configs[{{ $config->key }}][value]">
+                                        <option value="1" {{ $config->value == '1' ? 'selected' : '' }}>Yes</option>
+                                        <option value="0" {{ $config->value == '0' ? 'selected' : '' }}>No</option>
+                                    </select>
+                                @elseif($config->key === 'collection_frequency')
+                                    <select class="form-control" id="config_{{ $config->key }}" name="configs[{{ $config->key }}][value]">
+                                        <option value="once_daily" {{ $config->value === 'once_daily' ? 'selected' : '' }}>Once Daily</option>
+                                        <option value="twice_daily" {{ $config->value === 'twice_daily' ? 'selected' : '' }}>Twice Daily</option>
+                                        <option value="hourly" {{ $config->value === 'hourly' ? 'selected' : '' }}>Hourly</option>
+                                    </select>
+                                @else
+                                    <input type="{{ $config->type === 'float' ? 'number' : ($config->type === 'integer' ? 'number' : 'text') }}" 
+                                           class="form-control" 
+                                           id="config_{{ $config->key }}" 
+                                           name="configs[{{ $config->key }}][value]"
+                                           value="{{ $config->value }}"
+                                           @if($config->type === 'float') step="0.01" @endif
+                                           @if($config->type === 'integer') step="1" @endif>
+                                @endif
+                                <input type="hidden" name="configs[{{ $config->key }}][key]" value="{{ $config->key }}">
+                                <input type="hidden" name="configs[{{ $config->key }}][type]" value="{{ $config->type }}">
+                                <div class="form-text">{{ $config->description }}</div>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Configuration</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
         function initializeSavings(businessId, businessName) {
             document.getElementById('business_id').value = businessId;
@@ -487,6 +571,32 @@
                 } else {
                     alert('Error updating savings: ' + data.message);
                 }
+            });
+        });
+
+        // Configuration form submission
+        document.getElementById('configForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch('/super-admin/savings/update-config', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Configuration updated successfully!');
+                    location.reload();
+                } else {
+                    alert('Error updating configuration: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error updating configuration: ' + error);
             });
         });
     </script>

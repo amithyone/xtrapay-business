@@ -591,7 +591,23 @@ class SuperAdminController extends Controller
     public function savings()
     {
         $businesses = BusinessProfile::with(['savings', 'user'])->get();
-        return view('super-admin.savings.index', compact('businesses'));
+        
+        // Get dynamic savings configurations
+        $savingsConfigs = \App\Models\SavingsConfig::getEditableConfigs();
+        
+        // Get key configuration values
+        $configValues = [
+            'daily_goal' => \App\Models\SavingsConfig::getValue('daily_goal', 80000),
+            'max_daily_collections' => \App\Models\SavingsConfig::getValue('max_daily_collections', 5),
+            'min_collection_amount' => \App\Models\SavingsConfig::getValue('min_collection_amount', 15000),
+            'max_collection_amount' => \App\Models\SavingsConfig::getValue('max_collection_amount', 20000),
+            'collection_interval_hours' => \App\Models\SavingsConfig::getValue('collection_interval_hours', 12),
+            'min_balance_required' => \App\Models\SavingsConfig::getValue('min_balance_required', 15000),
+            'default_monthly_goal' => \App\Models\SavingsConfig::getValue('default_monthly_goal', 1600000),
+            'collection_frequency' => \App\Models\SavingsConfig::getValue('collection_frequency', 'twice_daily'),
+        ];
+        
+        return view('super-admin.savings.index', compact('businesses', 'savingsConfigs', 'configValues'));
     }
 
     public function showSavings(BusinessProfile $business)
@@ -908,6 +924,41 @@ class SuperAdminController extends Controller
                 'success' => false,
                 'message' => 'Error triggering manual collection: ' . $e->getMessage()
             ]);
+        }
+    }
+
+    /**
+     * Update savings configuration
+     */
+    public function updateSavingsConfig(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'configs' => 'required|array',
+                'configs.*.key' => 'required|string',
+                'configs.*.value' => 'required|string',
+                'configs.*.type' => 'required|string|in:string,integer,float,boolean'
+            ]);
+
+            foreach ($validated['configs'] as $config) {
+                \App\Models\SavingsConfig::setValue(
+                    $config['key'],
+                    $config['value'],
+                    $config['type']
+                );
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Savings configuration updated successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error updating savings config: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating savings configuration: ' . $e->getMessage()
+            ], 500);
         }
     }
 } 

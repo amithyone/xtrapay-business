@@ -82,12 +82,12 @@ class BusinessSavings extends Model
     }
 
     /**
-     * Check if savings collection is due (daily goal of ₦80,000, max 5 collections per day)
+     * Check if savings collection is due (dynamic daily goal and max collections)
      */
     public function isCollectionDue(): bool
     {
-        $dailyGoal = 80000; // ₦80,000 daily goal
-        $maxDailyCollections = 5;
+        $dailyGoal = \App\Models\SavingsConfig::getValue('daily_goal', 80000);
+        $maxDailyCollections = \App\Models\SavingsConfig::getValue('max_daily_collections', 5);
         
         // If no last collection, we can collect
         if (!$this->last_collection_date) {
@@ -122,7 +122,8 @@ class BusinessSavings extends Model
             return 0;
         }
         
+        $collectionIntervalHours = \App\Models\SavingsConfig::getValue('collection_interval_hours', 12);
         $hoursSinceLast = now()->diffInHours($this->last_collection_date);
-        return max(0, 12 - $hoursSinceLast);
+        return max(0, $collectionIntervalHours - $hoursSinceLast);
     }
 } 
