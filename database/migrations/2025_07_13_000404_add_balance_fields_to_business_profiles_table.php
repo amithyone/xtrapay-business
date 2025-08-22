@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('business_profiles', function (Blueprint $table) {
-            $table->decimal('withdrawable_balance', 15, 2)->default(0)->after('ledger_balance');
-            $table->text('balance_notes')->nullable()->after('withdrawable_balance');
-            $table->timestamp('last_balance_update')->nullable()->after('balance_notes');
+            $table->decimal('withdrawable_balance', 15, 2)->default(0);
+            $table->text('balance_notes')->nullable();
+            $table->timestamp('last_balance_update')->nullable();
         });
     }
 
