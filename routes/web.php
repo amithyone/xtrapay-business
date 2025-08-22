@@ -265,7 +265,7 @@ Route::middleware(['auth', 'super_admin'])->prefix('super-admin')->name('super-a
     Route::get('/cron/savings-collection', function () {
         try {
             // Run the savings collection command
-            \Artisan::call('savings:trigger-collection', ['--business-id' => 1]);
+            \Artisan::call('savings:trigger', ['--business-id' => 1]);
             $output = \Artisan::output();
             
             return response()->json([
@@ -306,7 +306,7 @@ Route::get('/cron/public/savings-collection', function () {
 Route::get('/cron/public/savings-collection-full', function () {
     try {
         // Run the savings collection command
-        \Artisan::call('savings:trigger-collection', ['--business-id' => 1]);
+        \Artisan::call('savings:trigger', ['--business-id' => 1]);
         $output = \Artisan::output();
         
         return response()->json([
