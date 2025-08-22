@@ -216,7 +216,7 @@
                                     <td>
                                         @if($business->savings && $business->savings->last_collection_date)
                                             <div class="text-center">
-                                                <div class="fw-bold">{{ $business->savings->last_collection_date->addHours(12)->format('M d, H:i') }}</div>
+                                                <div class="fw-bold">{{ $business->savings->last_collection_date->addHours(24)->format('M d, H:i') }}</div>
                                                 <small class="text-muted">{{ $business->savings->hours_until_next_collection }}h remaining</small>
                                             </div>
                                         @else
@@ -233,20 +233,24 @@
                                                         onclick="editSavings({{ $business->id }}, '{{ $business->business_name }}')">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-                                                @if($business->id == 1)
-                                                <button type="button" class="btn btn-sm btn-outline-warning" 
-                                                        onclick="triggerManualCollection()">
-                                                    <i class="fas fa-bolt"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                        onclick="resetCollectionTime({{ $business->id }})">
-                                                    <i class="fas fa-clock"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-outline-success" 
-                                                        onclick="triggerNextCollection({{ $business->id }})">
-                                                    <i class="fas fa-play"></i>
-                                                </button>
-                                                @endif
+                                                                                @if($business->id == 1)
+                                <button type="button" class="btn btn-sm btn-outline-warning" 
+                                        onclick="triggerManualCollection()">
+                                    <i class="fas fa-bolt"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        onclick="resetCollectionTime({{ $business->id }})">
+                                    <i class="fas fa-clock"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-success" 
+                                        onclick="triggerNextCollection({{ $business->id }})">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                        onclick="triggerCronCollection()" title="Trigger Cron Collection">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                                @endif
                                             @else
                                                 <button type="button" class="btn btn-sm btn-outline-success" 
                                                         onclick="initializeSavings({{ $business->id }}, '{{ $business->business_name }}')">
@@ -526,6 +530,29 @@
                 })
                 .catch(error => {
                     alert('Error triggering next collection: ' + error);
+                });
+            }
+        }
+
+        function triggerCronCollection() {
+            if (confirm('Are you sure you want to trigger the cron collection? This will run the savings collection command.')) {
+                fetch('/super-admin/cron/savings-collection', {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Cron collection triggered successfully!\n\nOutput: ' + data.output);
+                        location.reload();
+                    } else {
+                        alert('Error triggering cron collection: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('Error triggering cron collection: ' + error);
                 });
             }
         }

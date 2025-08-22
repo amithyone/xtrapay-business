@@ -260,6 +260,28 @@ Route::middleware(['auth', 'super_admin'])->prefix('super-admin')->name('super-a
             'method' => $request->method()
         ]);
     })->name('test.savings.init');
+    
+    // Cron trigger route for savings collection
+    Route::get('/cron/savings-collection', function () {
+        try {
+            // Run the savings collection command
+            \Artisan::call('savings:trigger-collection', ['--business-id' => 1]);
+            $output = \Artisan::output();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Savings collection triggered successfully',
+                'output' => $output,
+                'timestamp' => now()->format('Y-m-d H:i:s')
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error triggering savings collection: ' . $e->getMessage(),
+                'timestamp' => now()->format('Y-m-d H:i:s')
+            ], 500);
+        }
+    })->name('cron.savings.collection');
 });
 
 Route::get('/test-telegram', function () {
