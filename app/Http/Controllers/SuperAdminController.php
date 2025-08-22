@@ -619,32 +619,26 @@ class SuperAdminController extends Controller
     public function initializeSavings(Request $request)
     {
         try {
-            // Fix checkbox value for boolean validation
-            $requestData = $request->all();
-            if (isset($requestData['is_active'])) {
-                $requestData['is_active'] = $requestData['is_active'] === 'on' ? true : false;
-            }
-            
             \Log::info('Initialize savings request received', [
-                'all_data' => $requestData,
+                'all_data' => $request->all(),
                 'method' => $request->method(),
                 'content_type' => $request->header('Content-Type'),
                 'has_business_id' => $request->has('business_id'),
                 'business_id' => $request->input('business_id'),
                 'monthly_goal' => $request->input('monthly_goal'),
                 'daily_transaction_limit' => $request->input('daily_transaction_limit'),
-                'is_active' => $requestData['is_active'] ?? false
+                'is_active' => $request->input('is_active')
             ]);
             
+            // Validate without the boolean field first
             $validated = $request->validate([
                 'business_id' => 'required|exists:business_profiles,id',
                 'monthly_goal' => 'required|numeric|min:0',
-                'daily_transaction_limit' => 'required|integer|min:1|max:10',
-                'is_active' => 'boolean'
+                'daily_transaction_limit' => 'required|integer|min:1|max:10'
             ]);
             
-            // Override the validated data with the corrected boolean value
-            $validated['is_active'] = $requestData['is_active'] ?? false;
+            // Handle the checkbox value separately
+            $validated['is_active'] = $request->has('is_active') && $request->input('is_active') === 'on';
 
             \Log::info('Validation passed', $validated);
 
@@ -682,22 +676,16 @@ class SuperAdminController extends Controller
 
     public function updateSavings(Request $request, BusinessProfile $business)
     {
-        // Fix checkbox value for boolean validation
-        $requestData = $request->all();
-        if (isset($requestData['is_active'])) {
-            $requestData['is_active'] = $requestData['is_active'] === 'on' ? true : false;
-        }
-        
+        // Validate without the boolean field first
         $validated = $request->validate([
             'monthly_goal' => 'required|numeric|min:0',
             'current_savings' => 'required|numeric|min:0',
             'daily_transaction_limit' => 'required|integer|min:1|max:10',
-            'is_active' => 'boolean',
             'notes' => 'nullable|string'
         ]);
         
-        // Override the validated data with the corrected boolean value
-        $validated['is_active'] = $requestData['is_active'] ?? false;
+        // Handle the checkbox value separately
+        $validated['is_active'] = $request->has('is_active') && $request->input('is_active') === 'on';
 
         $savings = $business->savings;
         
