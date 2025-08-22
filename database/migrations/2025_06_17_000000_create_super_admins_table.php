@@ -64,14 +64,7 @@ return new class extends Migration
             ]);
         });
 
-        Schema::table('tickets', function (Blueprint $table) {
-            $table->dropForeign(['assigned_to']);
-            $table->dropColumn([
-                'assigned_to',
-                'assigned_at',
-                'resolved_at',
-                'resolution_notes'
-            ]);
-        });
+        // Note: The tickets table modifications are handled in a separate migration
+        // to avoid foreign key issues
     }
 }; 
