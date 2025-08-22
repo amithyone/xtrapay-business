@@ -616,14 +616,16 @@ class SuperAdminController extends Controller
         return view('super-admin.savings.show', compact('business', 'savingsStats'));
     }
 
-    public function initializeSavings(Request $request, BusinessProfile $business)
+    public function initializeSavings(Request $request)
     {
         $validated = $request->validate([
+            'business_id' => 'required|exists:business_profiles,id',
             'monthly_goal' => 'required|numeric|min:0',
             'daily_transaction_limit' => 'required|integer|min:1|max:10',
             'is_active' => 'boolean'
         ]);
 
+        $business = BusinessProfile::findOrFail($validated['business_id']);
         $savings = $this->savingsService->initializeSavings($business, $validated['monthly_goal']);
         
         $savings->update([

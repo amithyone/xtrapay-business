@@ -535,7 +535,7 @@
             const businessId = document.getElementById('business_id').value;
             const formData = new FormData(this);
             
-            fetch(`/super-admin/businesses/${businessId}/savings/initialize`, {
+            fetch(`/super-admin/savings/initialize`, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
