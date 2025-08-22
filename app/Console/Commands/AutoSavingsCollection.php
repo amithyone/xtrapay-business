@@ -22,7 +22,7 @@ class AutoSavingsCollection extends Command
      *
      * @var string
      */
-    protected $description = 'Automatically collect savings every 12 hours';
+    protected $description = 'Automatically collect savings every 24 hours';
 
     /**
      * Execute the console command.
@@ -45,7 +45,7 @@ class AutoSavingsCollection extends Command
             return 0;
         }
 
-        // Check if collection is due (every 12 hours)
+        // Check if collection is due (every 24 hours)
         if (!$savings->isCollectionDue()) {
             $this->info("⏰ Collection not due yet for Business ID {$businessId}");
             $this->info("🕐 Next collection in: {$savings->hours_until_next_collection} hours");

@@ -122,7 +122,7 @@ class BusinessSavings extends Model
             return 0;
         }
         
-        $collectionIntervalHours = \App\Models\SavingsConfig::getValue('collection_interval_hours', 12);
+        $collectionIntervalHours = \App\Models\SavingsConfig::getValue('collection_interval_hours', 24);
         $hoursSinceLast = now()->diffInHours($this->last_collection_date);
         return max(0, $collectionIntervalHours - $hoursSinceLast);
     }
