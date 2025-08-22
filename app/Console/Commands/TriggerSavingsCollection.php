@@ -107,7 +107,7 @@ class TriggerSavingsCollection extends Command
         $this->info("   💳 New business balance: ₦" . number_format($businessProfile->balance, 2));
         $this->info("   🏦 New savings total: ₦" . number_format($savings->current_savings, 2));
         $this->info("   📈 New progress: " . round($savings->progress_percentage, 2) . "%");
-        $this->info("   🕐 Next collection: " . ($savings->last_collection_date ? $savings->last_collection_date->addHours(24)->format('Y-m-d H:i:s') : 'N/A'));
+        $this->info("   🕐 Next collection: " . ($savings->next_collection_date_time ? $savings->next_collection_date_time->format('Y-m-d H:i:s') : 'N/A'));
 
         return 0;
     }

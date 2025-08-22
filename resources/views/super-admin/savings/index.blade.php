@@ -216,7 +216,7 @@
                                     <td>
                                         @if($business->savings && $business->savings->last_collection_date)
                                             <div class="text-center">
-                                                <div class="fw-bold">{{ $business->savings->last_collection_date->addHours(24)->format('M d, H:i') }}</div>
+                                                <div class="fw-bold">{{ $business->savings->next_collection_date_time ? $business->savings->next_collection_date_time->format('M d, H:i') : 'N/A' }}</div>
                                                 <small class="text-muted">{{ $business->savings->hours_until_next_collection }}h remaining</small>
                                             </div>
                                         @else

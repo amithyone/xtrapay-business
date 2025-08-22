@@ -114,7 +114,7 @@ class BusinessSavings extends Model
     }
 
     /**
-     * Get hours until next collection
+     * Get hours until next collection (fixed daily schedule at 11 AM)
      */
     public function getHoursUntilNextCollectionAttribute(): int
     {
@@ -122,8 +122,52 @@ class BusinessSavings extends Model
             return 0;
         }
         
-        $collectionIntervalHours = \App\Models\SavingsConfig::getValue('collection_interval_hours', 24);
-        $hoursSinceLast = now()->diffInHours($this->last_collection_date);
-        return max(0, $collectionIntervalHours - $hoursSinceLast);
+        $now = Carbon::now();
+        $today = $now->format('Y-m-d');
+        $lastCollectionDate = $this->last_collection_date->format('Y-m-d');
+        
+        // If last collection was today, next collection is tomorrow at 11 AM
+        if ($lastCollectionDate === $today) {
+            $nextCollection = Carbon::tomorrow()->setTime(11, 0, 0);
+        } else {
+            // If last collection was yesterday or earlier, next collection is today at 11 AM
+            $nextCollection = Carbon::today()->setTime(11, 0, 0);
+            
+            // If it's already past 11 AM today, next collection is tomorrow at 11 AM
+            if ($now->hour >= 11) {
+                $nextCollection = Carbon::tomorrow()->setTime(11, 0, 0);
+            }
+        }
+        
+        return max(0, $now->diffInHours($nextCollection, false));
+    }
+    
+    /**
+     * Get the next collection date and time
+     */
+    public function getNextCollectionDateTimeAttribute()
+    {
+        if (!$this->last_collection_date) {
+            return null;
+        }
+        
+        $now = Carbon::now();
+        $today = $now->format('Y-m-d');
+        $lastCollectionDate = $this->last_collection_date->format('Y-m-d');
+        
+        // If last collection was today, next collection is tomorrow at 11 AM
+        if ($lastCollectionDate === $today) {
+            $nextCollection = Carbon::tomorrow()->setTime(11, 0, 0);
+        } else {
+            // If last collection was yesterday or earlier, next collection is today at 11 AM
+            $nextCollection = Carbon::today()->setTime(11, 0, 0);
+            
+            // If it's already past 11 AM today, next collection is tomorrow at 11 AM
+            if ($now->hour >= 11) {
+                $nextCollection = Carbon::tomorrow()->setTime(11, 0, 0);
+            }
+        }
+        
+        return $nextCollection;
     }
 } 

@@ -51,19 +51,31 @@ try {
         echo "Is active: " . ($savings->is_active ? 'Yes' : 'No') . "\n";
         echo "Current savings: ₦" . number_format($savings->current_savings, 2) . "\n";
         
-        // 3. Calculate correct hours until next collection
+        // 3. Calculate correct hours until next collection (fixed 11 AM schedule)
         if ($savings->last_collection_date) {
             $lastCollection = Carbon::parse($savings->last_collection_date);
             $now = Carbon::now();
-            $hoursSinceLast = $now->diffInHours($lastCollection);
-            $hoursUntilNext = max(0, 24 - $hoursSinceLast);
+            $today = $now->format('Y-m-d');
+            $lastCollectionDate = $lastCollection->format('Y-m-d');
             
-            echo "\n⏰ Time calculations:\n";
+            // Calculate next collection time (11 AM daily)
+            if ($lastCollectionDate === $today) {
+                $nextCollection = Carbon::tomorrow()->setTime(11, 0, 0);
+            } else {
+                $nextCollection = Carbon::today()->setTime(11, 0, 0);
+                if ($now->hour >= 11) {
+                    $nextCollection = Carbon::tomorrow()->setTime(11, 0, 0);
+                }
+            }
+            
+            $hoursUntilNext = max(0, $now->diffInHours($nextCollection, false));
+            
+            echo "\n⏰ Time calculations (Fixed 11 AM Schedule):\n";
             echo "Last collection: " . $lastCollection->format('Y-m-d H:i:s') . "\n";
             echo "Current time: " . $now->format('Y-m-d H:i:s') . "\n";
-            echo "Hours since last: " . $hoursSinceLast . "\n";
-            echo "Hours until next (24h interval): " . $hoursUntilNext . "\n";
-            echo "Next collection time: " . $lastCollection->addHours(24)->format('M d, H:i') . "\n";
+            echo "Next collection: " . $nextCollection->format('Y-m-d H:i:s') . "\n";
+            echo "Hours until next: " . $hoursUntilNext . "\n";
+            echo "Next collection time: " . $nextCollection->format('M d, H:i') . "\n";
         } else {
             echo "\n✅ No last collection date - should show 'Ready Now'\n";
         }
