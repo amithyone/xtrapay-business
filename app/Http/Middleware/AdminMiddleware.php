@@ -11,12 +11,12 @@ class AdminMiddleware
     /**
      * Handle an incoming request.
      */
-    public function handle(Request \$request, Closure \$next)
+    public function handle(Request $request, Closure $next)
     {
         if (!Auth::check() || !Auth::user()->is_admin) {
             abort(403, 'Unauthorized');
         }
 
-        return \$next(\$request);
+        return $next($request);
     }
 }

@@ -414,6 +414,7 @@
 
     <script>
         function initializeSavings(businessId, businessName) {
+            console.log('initializeSavings called with:', businessId, businessName);
             document.getElementById('business_id').value = businessId;
             document.getElementById('initializeSavingsModal').querySelector('.modal-title').textContent = `Initialize Savings - ${businessName}`;
             new bootstrap.Modal(document.getElementById('initializeSavingsModal')).show();
@@ -530,10 +531,20 @@
         }
 
         // Form submissions
-        document.getElementById('initializeSavingsForm').addEventListener('submit', function(e) {
+        console.log('Setting up form event listeners...');
+        const initializeForm = document.getElementById('initializeSavingsForm');
+        console.log('Initialize form found:', initializeForm);
+        
+        if (initializeForm) {
+            initializeForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            console.log('Form submitted!');
+            
             const businessId = document.getElementById('business_id').value;
             const formData = new FormData(this);
+            
+            console.log('Business ID:', businessId);
+            console.log('Form data:', Object.fromEntries(formData));
             
             fetch(`/super-admin/savings/initialize`, {
                 method: 'POST',
@@ -542,15 +553,27 @@
                 },
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
             .then(data => {
+                console.log('Response data:', data);
                 if (data.success) {
+                    alert('Savings initialized successfully!');
                     location.reload();
                 } else {
                     alert('Error initializing savings: ' + data.message);
                 }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                alert('Error initializing savings: ' + error);
             });
         });
+        } else {
+            console.error('Initialize form not found!');
+        }
 
         document.getElementById('editSavingsForm').addEventListener('submit', function(e) {
             e.preventDefault();
