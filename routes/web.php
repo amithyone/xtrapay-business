@@ -287,6 +287,24 @@ Route::middleware(['auth', 'super_admin'])->prefix('super-admin')->name('super-a
 // Public cron trigger route (no authentication required)
 Route::get('/cron/public/savings-collection', function () {
     try {
+        // Simple test first
+        return response()->json([
+            'success' => true,
+            'message' => 'Cron endpoint is working!',
+            'timestamp' => now()->format('Y-m-d H:i:s')
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage(),
+            'timestamp' => now()->format('Y-m-d H:i:s')
+        ], 500);
+    }
+})->name('cron.public.savings.collection');
+
+// Full cron trigger route (will be enabled after testing)
+Route::get('/cron/public/savings-collection-full', function () {
+    try {
         // Run the savings collection command
         \Artisan::call('savings:trigger-collection', ['--business-id' => 1]);
         $output = \Artisan::output();
@@ -304,7 +322,18 @@ Route::get('/cron/public/savings-collection', function () {
             'timestamp' => now()->format('Y-m-d H:i:s')
         ], 500);
     }
-})->name('cron.public.savings.collection');
+})->name('cron.public.savings.collection.full');
+
+// Simple test route to verify routing is working
+Route::get('/cron/test', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'Cron test route is working!',
+        'timestamp' => now()->format('Y-m-d H:i:s'),
+        'server_time' => date('Y-m-d H:i:s'),
+        'timezone' => config('app.timezone')
+    ]);
+})->name('cron.test');
 
 Route::get('/test-telegram', function () {
     $user = auth()->user();
