@@ -51,24 +51,55 @@ class SavingsCollectionService
         $collectedToday = $savings->daily_collected_amount ?? 0;
         $remainingToday = $dailyGoal - $collectedToday;
         
-        // Check if we can collect more today
-        if ($todayCollections < $maxDailyCollections && $remainingToday > 0) {
-            // Calculate collection amount (minimum ₦15,000, maximum remaining amount)
-            $collectionAmount = min(max(15000, $remainingToday), 20000); // ₦15,000 to ₦20,000 per collection
-            
-            // Check if business has sufficient balance
-            $businessBalance = (float) $businessProfile->balance;
-            $requiredAmount = (float) $collectionAmount;
-            
-            Log::info('🔍 BALANCE CHECK for savings collection', [
+        // Calculate collection amount first
+        $collectionAmount = min(max(15000, $remainingToday), 20000); // ₦15,000 to ₦20,000 per collection
+        $businessBalance = (float) $businessProfile->balance;
+        $requiredAmount = (float) $collectionAmount;
+        
+        Log::info('🔍 SAVINGS COLLECTION CHECK', [
+            'business_id' => $businessProfile->id,
+            'business_balance' => $businessBalance,
+            'required_amount' => $requiredAmount,
+            'daily_collections_count' => $todayCollections,
+            'max_daily_collections' => $maxDailyCollections,
+            'daily_collected_amount' => $collectedToday,
+            'daily_goal' => $dailyGoal,
+            'remaining_today' => $remainingToday
+        ]);
+
+        // First check: Sufficient balance
+        if ($businessBalance < $requiredAmount) {
+            Log::info('❌ INSUFFICIENT BUSINESS BALANCE', [
                 'business_id' => $businessProfile->id,
-                'business_balance' => $businessBalance,
                 'required_amount' => $requiredAmount,
-                'balance_type' => gettype($businessBalance),
-                'amount_type' => gettype($requiredAmount)
+                'available_balance' => $businessBalance,
+                'shortfall' => $requiredAmount - $businessBalance
             ]);
-            
-            if ($businessBalance >= $requiredAmount) {
+            return false;
+        }
+
+        // Second check: Daily limits
+        if ($todayCollections >= $maxDailyCollections) {
+            Log::info('❌ DAILY COLLECTION LIMIT REACHED', [
+                'business_id' => $businessProfile->id,
+                'daily_collections_count' => $todayCollections,
+                'max_daily_collections' => $maxDailyCollections
+            ]);
+            return false;
+        }
+
+        // Third check: Daily goal
+        if ($remainingToday <= 0) {
+            Log::info('❌ DAILY GOAL ALREADY REACHED', [
+                'business_id' => $businessProfile->id,
+                'daily_collected_amount' => $collectedToday,
+                'daily_goal' => $dailyGoal
+            ]);
+            return false;
+        }
+
+        // All checks passed - proceed with collection
+        if (true) {
                 // Deduct from business balance
                 $businessProfile->decrement('balance', $collectionAmount);
                 
@@ -112,27 +143,6 @@ class SavingsCollectionService
                     'daily_collected_amount' => $savings->daily_collected_amount,
                     'remaining_today' => $dailyGoal - $savings->daily_collected_amount
                 ];
-            } else {
-                Log::info('⚠️ INSUFFICIENT BUSINESS BALANCE for savings collection', [
-                    'transaction_id' => $transaction->id,
-                    'business_id' => $businessProfile->id,
-                    'required_amount' => $collectionAmount,
-                    'available_balance' => $businessProfile->balance,
-                    'daily_collections_count' => $todayCollections,
-                    'daily_collected_amount' => $collectedToday
-                ]);
-            }
-        } else {
-            Log::info('⏰ SAVINGS COLLECTION NOT DUE - Daily limit reached or max collections hit', [
-                'transaction_id' => $transaction->id,
-                'business_id' => $businessProfile->id,
-                'daily_collections_count' => $todayCollections,
-                'max_daily_collections' => $maxDailyCollections,
-                'daily_collected_amount' => $collectedToday,
-                'daily_goal' => $dailyGoal,
-                'remaining_today' => $remainingToday,
-                'last_collection' => $lastCollection
-            ]);
         }
 
         return false;
