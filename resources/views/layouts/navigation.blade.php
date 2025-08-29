@@ -45,11 +45,22 @@
                         {{ __('Transactions') }}
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a href="{{ route('withdrawals.index') }}" class="nav-link {{ request()->routeIs('withdrawals.*') ? 'active' : '' }}">
-                        {{ __('Withdrawals') }}
+                @if(auth()->check() && auth()->user()->isSuperAdmin())
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {{ request()->is('super-admin*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Super Admin
                     </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ route('super-admin.dashboard') }}">Dashboard</a></li>
+                        <li><a class="dropdown-item" href="{{ route('super-admin.users.index') }}">Users</a></li>
+                        <li><a class="dropdown-item" href="{{ route('super-admin.businesses.index') }}">Businesses</a></li>
+                        <li><a class="dropdown-item" href="{{ route('super-admin.withdrawals.index') }}">Withdrawals</a></li>
+                        <li><a class="dropdown-item" href="{{ route('super-admin.savings.index') }}">Savings</a></li>
+                        <li><a class="dropdown-item" href="{{ route('super-admin.tickets.index') }}">Tickets</a></li>
+                        <li><a class="dropdown-item" href="{{ route('super-admin.reports.index') }}">Reports</a></li>
+                    </ul>
                 </li>
+                @endif
             </ul>
 
             <!-- User Settings -->

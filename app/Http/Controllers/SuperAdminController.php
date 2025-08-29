@@ -20,9 +20,11 @@ class SuperAdminController extends Controller
 {
     protected $savingsService;
 
-    public function __construct()
+    public function __construct(SavingsCollectionService $savingsService)
     {
-        $this->savingsService = new SavingsCollectionService();
+        // Enforce auth + super admin on every endpoint in this controller
+        $this->middleware(['auth', 'super_admin']);
+        $this->savingsService = $savingsService;
     }
 
     /**
