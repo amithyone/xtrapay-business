@@ -13,8 +13,12 @@ class SuperAdminMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        if (!Auth::check() || !Auth::user()->isSuperAdmin()) {
-            abort(403, 'Super Admin access required');
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+        
+        if (!Auth::user()->isSuperAdmin()) {
+            return redirect()->route('dashboard')->with('error', 'Access denied. Super Admin privileges required.');
         }
 
         return $next($request);
