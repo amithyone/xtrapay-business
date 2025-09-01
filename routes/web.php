@@ -74,6 +74,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('sites', SiteController::class);
     Route::post('/sites/{site}/activate', [SiteController::class, 'activate'])->name('sites.activate');
     Route::post('/sites/{site}/deactivate', [SiteController::class, 'deactivate'])->name('sites.deactivate');
+    
+    // Debug route for testing site access
+    Route::get('/debug/site/{site}', function (App\Models\Site $site) {
+        $user = auth()->user();
+        return response()->json([
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'is_admin' => $user->is_admin,
+            'is_super_admin' => $user->isSuperAdmin(),
+            'has_business_profile' => $user->businessProfile ? true : false,
+            'user_business_id' => $user->businessProfile ? $user->businessProfile->id : null,
+            'site_id' => $site->id,
+            'site_business_id' => $site->business_profile_id,
+            'can_access' => $user->isSuperAdmin() || ($user->businessProfile && $user->businessProfile->id === $site->business_profile_id)
+        ]);
+    })->name('debug.site')->middleware('auth');
     Route::delete('/sites/{site}', [SiteController::class, 'destroy'])->name('sites.destroy');
 
     // Transaction Routes
