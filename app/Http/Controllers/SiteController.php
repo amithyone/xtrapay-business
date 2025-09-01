@@ -91,7 +91,7 @@ class SiteController extends Controller
             // Continue with the method
         } else {
             // Regular users can only access their own sites
-            if (!auth()->user()->businessProfile || $site->business_profile_id !== auth()->user()->businessProfile->id) {
+            if (!auth()->user()->businessProfile || (int)$site->business_profile_id !== (int)auth()->user()->businessProfile->id) {
                 abort(403, 'Unauthorized action.');
             }
         }
@@ -128,7 +128,7 @@ class SiteController extends Controller
             // Continue with the method
         } else {
             // Regular users can only access their own sites
-            if (!auth()->user()->businessProfile || $site->business_profile_id !== auth()->user()->businessProfile->id) {
+            if (!auth()->user()->businessProfile || (int)$site->business_profile_id !== (int)auth()->user()->businessProfile->id) {
                 abort(403, 'Unauthorized action.');
             }
         }
@@ -163,7 +163,7 @@ class SiteController extends Controller
             // Continue with the method
         } else {
             // Regular users can only access their own sites
-            if (!auth()->user()->businessProfile || $site->business_profile_id !== auth()->user()->businessProfile->id) {
+            if (!auth()->user()->businessProfile || (int)$site->business_profile_id !== (int)auth()->user()->businessProfile->id) {
                 abort(403, 'Unauthorized action.');
             }
         }
@@ -203,7 +203,7 @@ class SiteController extends Controller
             // Continue with the method
         } else {
             // Regular users can only access their own sites
-            if (!auth()->user()->businessProfile || $site->business_profile_id !== auth()->user()->businessProfile->id) {
+            if (!auth()->user()->businessProfile || (int)$site->business_profile_id !== (int)auth()->user()->businessProfile->id) {
                 abort(403, 'Unauthorized action.');
             }
         }
@@ -265,7 +265,7 @@ class SiteController extends Controller
             // Continue with the method
         } else {
             // Regular users can only access their own sites
-            if (!auth()->user()->businessProfile || $site->business_profile_id !== auth()->user()->businessProfile->id) {
+            if (!auth()->user()->businessProfile || (int)$site->business_profile_id !== (int)auth()->user()->businessProfile->id) {
                 abort(403, 'Unauthorized action.');
             }
         }
@@ -302,7 +302,7 @@ class SiteController extends Controller
             // Continue with the method
         } else {
             // Regular users can only access their own sites
-            if (!auth()->user()->businessProfile || $site->business_profile_id !== auth()->user()->businessProfile->id) {
+            if (!auth()->user()->businessProfile || (int)$site->business_profile_id !== (int)auth()->user()->businessProfile->id) {
                 abort(403, 'Unauthorized action.');
             }
         }

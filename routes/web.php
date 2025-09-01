@@ -110,7 +110,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'business_profile_id' => $user->businessProfile ? $user->businessProfile->id : null
             ],
             'sites' => $sites->map(function($site) use ($user) {
-                $canAccess = $user->isSuperAdmin() || ($user->businessProfile && $user->businessProfile->id === $site->business_profile_id);
+                $canAccess = $user->isSuperAdmin() || ($user->businessProfile && (int)$user->businessProfile->id === (int)$site->business_profile_id);
                 return [
                     'id' => $site->id,
                     'name' => $site->name,
