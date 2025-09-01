@@ -297,31 +297,42 @@ class SiteController extends Controller
 
     public function deactivate(Site $site)
     {
-        \Log::info('Deactivate site request', [
-            'user_id' => auth()->id(),
-            'user_email' => auth()->user()->email,
-            'is_admin' => auth()->user()->is_admin,
-            'is_super_admin' => auth()->user()->isSuperAdmin(),
-            'site_id' => $site->id,
-            'site_business_id' => $site->business_profile_id,
-            'user_business_id' => auth()->user()->businessProfile ? auth()->user()->businessProfile->id : null
-        ]);
-        
-        // Allow super admin users to access any site
-        if (auth()->user()->isSuperAdmin()) {
-            \Log::info('User is super admin, allowing access');
-        } else {
-            // Regular users can only access their own sites
-            if (!auth()->user()->businessProfile || $site->business_profile_id !== auth()->user()->businessProfile->id) {
-                \Log::error('Unauthorized access attempt', [
-                    'user_id' => auth()->id(),
-                    'site_id' => $site->id,
-                    'site_business_id' => $site->business_profile_id,
-                    'user_business_id' => auth()->user()->businessProfile ? auth()->user()->businessProfile->id : null
-                ]);
-                abort(403, 'Unauthorized action.');
+        try {
+            \Log::info('Deactivate site request', [
+                'user_id' => auth()->id(),
+                'user_email' => auth()->user()->email,
+                'is_admin' => auth()->user()->is_admin,
+                'is_super_admin' => auth()->user()->isSuperAdmin(),
+                'site_id' => $site->id,
+                'site_name' => $site->name,
+                'site_business_id' => $site->business_profile_id,
+                'user_business_id' => auth()->user()->businessProfile ? auth()->user()->businessProfile->id : null,
+                'user_has_business_profile' => auth()->user()->businessProfile ? true : false,
+                'business_profile_match' => auth()->user()->businessProfile ? ($site->business_profile_id === auth()->user()->businessProfile->id) : false
+            ]);
+            
+            // Allow super admin users to access any site
+            if (auth()->user()->isSuperAdmin()) {
+                \Log::info('User is super admin, allowing access');
+            } else {
+                // Regular users can only access their own sites
+                if (!auth()->user()->businessProfile || $site->business_profile_id !== auth()->user()->businessProfile->id) {
+                    \Log::error('Unauthorized access attempt', [
+                        'user_id' => auth()->id(),
+                        'site_id' => $site->id,
+                        'site_business_id' => $site->business_profile_id,
+                        'user_business_id' => auth()->user()->businessProfile ? auth()->user()->businessProfile->id : null
+                    ]);
+                    abort(403, 'Unauthorized action.');
+                }
+                \Log::info('User owns this site, allowing access');
             }
-            \Log::info('User owns this site, allowing access');
+        } catch (\Exception $e) {
+            \Log::error('Error in deactivate method', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            abort(500, 'Internal server error');
         }
         
         try {
