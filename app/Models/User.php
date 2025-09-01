@@ -80,7 +80,8 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function isSuperAdmin()
     {
-        return $this->superAdmin()->where('is_active', true)->exists();
+        // User must be admin AND have active super admin record
+        return $this->is_admin && $this->superAdmin()->where('is_active', true)->exists();
     }
 
     /**

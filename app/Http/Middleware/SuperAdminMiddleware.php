@@ -17,7 +17,12 @@ class SuperAdminMiddleware
             return redirect()->route('login');
         }
         
-        if (!Auth::user()->isSuperAdmin()) {
+        $user = Auth::user();
+        if (!$user->is_admin) {
+            return redirect()->route('dashboard')->with('error', 'Access denied. Admin privileges required.');
+        }
+        
+        if (!$user->isSuperAdmin()) {
             return redirect()->route('dashboard')->with('error', 'Access denied. Super Admin privileges required.');
         }
 

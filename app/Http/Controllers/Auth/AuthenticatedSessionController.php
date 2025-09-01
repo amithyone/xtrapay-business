@@ -32,7 +32,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         // Check if user is a super admin and redirect accordingly
-        if ($request->user()->superAdmin && $request->user()->superAdmin->is_active) {
+        if ($request->user()->isSuperAdmin()) {
             return redirect()->intended(route('super-admin.dashboard'));
         }
 
