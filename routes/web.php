@@ -91,35 +91,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ]);
     })->name('debug.site')->middleware('auth');
     
-    // Debug route for testing user 2 specifically
-    Route::get('/debug/user2', function () {
-        $user = \App\Models\User::find(2);
-        if (!$user) {
-            return response()->json(['error' => 'User 2 not found']);
-        }
-        
-        $sites = \App\Models\Site::where('business_profile_id', 1)->get();
-        
-        return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'email' => $user->email,
-                'is_admin' => $user->is_admin,
-                'is_super_admin' => $user->isSuperAdmin(),
-                'has_business_profile' => $user->businessProfile ? true : false,
-                'business_profile_id' => $user->businessProfile ? $user->businessProfile->id : null
-            ],
-            'sites' => $sites->map(function($site) use ($user) {
-                $canAccess = $user->isSuperAdmin() || ($user->businessProfile && (int)$user->businessProfile->id === (int)$site->business_profile_id);
-                return [
-                    'id' => $site->id,
-                    'name' => $site->name,
-                    'business_profile_id' => $site->business_profile_id,
-                    'can_access' => $canAccess
-                ];
-            })
-        ]);
-    })->name('debug.user2');
+
     Route::delete('/sites/{site}', [SiteController::class, 'destroy'])->name('sites.destroy');
 
     // Transaction Routes
