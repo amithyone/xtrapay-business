@@ -14,8 +14,8 @@ class SiteController extends Controller
      */
     public function index()
     {
-        if (auth()->user()->is_admin) {
-            // Admin users can see all sites
+        if (auth()->user()->isSuperAdmin()) {
+            // Super admin users can see all sites
             $sites = Site::all();
         } else {
             // Regular users can only see their own sites
@@ -86,8 +86,8 @@ class SiteController extends Controller
      */
     public function show(Site $site)
     {
-        // Allow admin users to access any site
-        if (auth()->user()->is_admin) {
+        // Allow super admin users to access any site
+        if (auth()->user()->isSuperAdmin()) {
             // Continue with the method
         } else {
             // Regular users can only access their own sites
@@ -123,8 +123,8 @@ class SiteController extends Controller
      */
     public function edit(Site $site)
     {
-        // Allow admin users to access any site
-        if (auth()->user()->is_admin) {
+        // Allow super admin users to access any site
+        if (auth()->user()->isSuperAdmin()) {
             // Continue with the method
         } else {
             // Regular users can only access their own sites
@@ -158,8 +158,8 @@ class SiteController extends Controller
      */
     public function update(Request $request, Site $site)
     {
-        // Allow admin users to access any site
-        if (auth()->user()->is_admin) {
+        // Allow super admin users to access any site
+        if (auth()->user()->isSuperAdmin()) {
             // Continue with the method
         } else {
             // Regular users can only access their own sites
@@ -198,8 +198,8 @@ class SiteController extends Controller
      */
     public function destroy(Site $site)
     {
-        // Allow admin users to access any site
-        if (auth()->user()->is_admin) {
+        // Allow super admin users to access any site
+        if (auth()->user()->isSuperAdmin()) {
             // Continue with the method
         } else {
             // Regular users can only access their own sites
@@ -260,8 +260,8 @@ class SiteController extends Controller
 
     public function activate(Site $site)
     {
-        // Allow admin users to access any site
-        if (auth()->user()->is_admin) {
+        // Allow super admin users to access any site
+        if (auth()->user()->isSuperAdmin()) {
             // Continue with the method
         } else {
             // Regular users can only access their own sites
@@ -297,8 +297,8 @@ class SiteController extends Controller
 
     public function deactivate(Site $site)
     {
-        // Allow admin users to access any site
-        if (auth()->user()->is_admin) {
+        // Allow super admin users to access any site
+        if (auth()->user()->isSuperAdmin()) {
             // Continue with the method
         } else {
             // Regular users can only access their own sites
