@@ -22,8 +22,15 @@ class SuperAdminMiddleware
             return redirect()->route('dashboard')->with('error', 'Access denied. Admin privileges required.');
         }
         
-        if (!$user->isSuperAdmin()) {
-            return redirect()->route('dashboard')->with('error', 'Access denied. Super Admin privileges required.');
+        try {
+            if (!$user->isSuperAdmin()) {
+                return redirect()->route('dashboard')->with('error', 'Access denied. Super Admin privileges required.');
+            }
+        } catch (\Exception $e) {
+            // If super_admins table doesn't exist, just check is_admin
+            if (!$user->is_admin) {
+                return redirect()->route('dashboard')->with('error', 'Access denied. Admin privileges required.');
+            }
         }
 
         return $next($request);

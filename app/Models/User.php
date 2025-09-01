@@ -81,7 +81,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isSuperAdmin()
     {
         // User must be admin AND have active super admin record
-        return $this->is_admin && $this->superAdmin()->where('is_active', true)->exists();
+        try {
+            // Check if super_admins table exists first
+            if (!\Schema::hasTable('super_admins')) {
+                return $this->is_admin;
+            }
+            return $this->is_admin && $this->superAdmin()->where('is_active', true)->exists();
+        } catch (\Exception $e) {
+            // If any error occurs, just check is_admin
+            return $this->is_admin;
+        }
     }
 
     /**
