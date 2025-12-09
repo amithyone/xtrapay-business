@@ -88,17 +88,6 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label for="api_code" class="form-label">API Code</label>
-                            <input type="text" class="form-control @error('api_code') is-invalid @enderror" 
-                                   id="api_code" name="api_code" 
-                                   value="{{ old('api_code') }}" 
-                                   placeholder="Enter API code" required>
-                            @error('api_code')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-md-6 mb-3">
                             <label for="allowed_ips" class="form-label">Allowed IPs</label>
                             <input type="text" class="form-control @error('allowed_ips') is-invalid @enderror" 
                                    id="allowed_ips" name="allowed_ips" 
@@ -145,7 +134,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <p class="mb-3">After creating your site, you'll receive API credentials. Use them to integrate XtraPay Virtual Accounts:</p>
+                <p class="mb-3"><strong>API credentials are automatically generated</strong> when you create a site. After creation, you'll see your API Code and API Key on the site details page. Use these credentials to integrate XtraPay Virtual Accounts:</p>
                 <div class="d-flex gap-2 flex-wrap">
                     <a href="{{ route('documentation.quick-start') }}" class="btn btn-sm btn-outline-primary" target="_blank">
                         <i class="fas fa-rocket me-2"></i>Quick Start Guide

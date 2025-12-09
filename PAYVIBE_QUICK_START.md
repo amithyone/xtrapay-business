@@ -5,13 +5,16 @@
 ### Step 1: Get Your Credentials (2 minutes)
 
 1. Log in to XtraPay dashboard at **https://xtrapay.cash**
-2. Go to **Sites** → Select your site
-3. Copy these values:
-   - **API Code** (e.g., `abc123xy`)
-   - **API Key** (64 characters)
-   - **Webhook URL** field (you'll set this next)
+2. Go to **Sites** → **Create New Site** (if you don't have one)
+   - Enter your site name, URL, and webhook URL
+   - **API Code and API Key are automatically generated** for you
+3. After creating your site, go to **Sites** → Select your site
+4. Copy these auto-generated values:
+   - **API Code** (e.g., `abc123xy`) - Auto-generated
+   - **API Key** (64 characters) - Auto-generated
+   - **Webhook URL** - The URL you entered where you'll receive notifications
 
-**What is this?** XtraPay provides virtual account numbers that your customers can use to make bank transfers. When they pay, you'll receive instant notifications.
+**What is this?** XtraPay provides virtual account numbers that your customers can use to make bank transfers. When they pay, you'll receive instant notifications. **No manual API key generation needed** - everything is set up automatically!
 
 ### Step 2: Set Your Webhook URL (1 minute)
 

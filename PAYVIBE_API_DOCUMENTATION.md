@@ -17,7 +17,14 @@ All API requests require authentication using:
 - **X-API-Key Header**: Your site's API key (64 characters)
 - **site_api_code**: Your site's API code (in request body)
 
-You can find these credentials in your XtraPay dashboard at **https://xtrapay.cash** under **Sites** → **Your Site** → **API Credentials**.
+**How to get your credentials:**
+1. Log in to XtraPay dashboard at **https://xtrapay.cash**
+2. Go to **Sites** → **Create New Site** (if you don't have one)
+   - API Code and API Key are **automatically generated** when you create a site
+3. Go to **Sites** → Select your site → View API Credentials
+4. Copy your **API Code** and **API Key**
+
+**Note:** You don't need to manually generate API keys - they are automatically created for you when you add a new site.
 
 ## 💰 Transaction Fees
 
