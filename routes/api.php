@@ -21,4 +21,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 // Webhook Routes (for receiving notifications from external sites) - No auth required
 Route::post('/webhook/receive-transaction', [\App\Http\Controllers\WebhookController::class, 'receiveTransaction'])->name('webhook.receive-transaction');
 Route::post('/webhook/verify', [\App\Http\Controllers\WebhookController::class, 'verifyWebhook'])->name('webhook.verify');
-Route::get('/webhook/test', [\App\Http\Controllers\WebhookController::class, 'testWebhook'])->name('webhook.test'); 
+Route::get('/webhook/test', [\App\Http\Controllers\WebhookController::class, 'testWebhook'])->name('webhook.test');
+
+// PayVibe Webhook Route (no auth required - PayVibe will call this)
+Route::post('/webhook/payvibe', [\App\Http\Controllers\PayVibeWebhookController::class, 'handleWebhook'])->name('api.webhook.payvibe'); 

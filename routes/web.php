@@ -143,6 +143,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // Dashboard Transactions Pagination
     Route::get('/dashboard/transactions', [DashboardController::class, 'getDashboardTransactions'])->name('dashboard.transactions');
+    
+    // PayVibe Routes
+    Route::post('/payvibe/generate-account', [\App\Http\Controllers\PayVibeController::class, 'generateVirtualAccount'])->name('payvibe.generate-account');
+    Route::get('/payvibe/check-status/{transaction}', [\App\Http\Controllers\PayVibeController::class, 'checkPaymentStatus'])->name('payvibe.check-status');
 });
 
 // Admin Routes (separate from verified routes)
@@ -359,6 +363,51 @@ Route::get('/test-telegram', function () {
     $message = "🚀 Test notification from Xtrabusiness!";
     return app(NotificationController::class)->sendTelegramNotification($chatId, $message);
 });
+
+// Test PayVibe Integration
+Route::get('/test-payvibe', function (Request $request) {
+    try {
+        $payVibeService = app(\App\Services\PayVibeService::class);
+        
+        // Generate a test reference
+        $testBusinessId = 1; // Default test business ID
+        $reference = $payVibeService->generateReference($testBusinessId);
+        
+        // Test amount: ₦100 (10000 kobo)
+        $amountInKobo = 10000;
+        
+        \Log::info('PayVibe Test: Attempting to generate virtual account', [
+            'reference' => $reference,
+            'amount' => $amountInKobo
+        ]);
+        
+        // Call PayVibe API
+        $result = $payVibeService->initiateVirtualAccount($reference, $amountInKobo);
+        
+        return response()->json([
+            'success' => $result['success'],
+            'message' => $result['message'] ?? 'Test completed',
+            'reference' => $reference,
+            'amount_kobo' => $amountInKobo,
+            'amount_ngn' => $amountInKobo / 100,
+            'payvibe_response' => $result,
+            'timestamp' => now()->toIso8601String()
+        ], $result['success'] ? 200 : 500);
+        
+    } catch (\Exception $e) {
+        \Log::error('PayVibe Test Error', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Test failed: ' . $e->getMessage(),
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+})->name('test.payvibe');
 
 Route::get('/test-business-telegram', [NotificationController::class, 'testBusinessTelegram'])->middleware('auth');
 
