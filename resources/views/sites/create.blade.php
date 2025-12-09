@@ -23,7 +23,10 @@
                 <h1 class="h2 fw-bold mb-1">Add New Site</h1>
                 <p class="text-secondary mb-0">Create a new site for your business</p>
             </div>
-            <div class="mt-3 mt-md-0">
+            <div class="mt-3 mt-md-0 d-flex gap-2">
+                <a href="{{ route('documentation.index') }}" class="btn btn-outline-info" target="_blank">
+                    <i class="fas fa-book me-2"></i>API Documentation
+                </a>
                 <a href="{{ route('sites.index') }}" class="btn btn-outline-primary">
                     <i class="fas fa-arrow-left me-2"></i>Back to Sites
                 </a>
@@ -65,11 +68,20 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label for="webhook_url" class="form-label">Webhook URL</label>
+                            <label for="webhook_url" class="form-label">
+                                Webhook URL
+                                <a href="{{ route('documentation.integration-guide') }}#setting-up-webhook-notifications" target="_blank" class="text-info ms-2" title="Learn about webhook setup">
+                                    <i class="fas fa-question-circle"></i>
+                                </a>
+                            </label>
                             <input type="url" class="form-control @error('webhook_url') is-invalid @enderror" 
                                    id="webhook_url" name="webhook_url" 
                                    value="{{ old('webhook_url') }}" 
-                                   placeholder="https://example.com/webhook" required>
+                                   placeholder="https://example.com/webhooks/xtrapay" required>
+                            <div class="form-text">
+                                Where to receive payment notifications. 
+                                <a href="{{ route('documentation.integration-guide') }}#setting-up-webhook-notifications" target="_blank">See documentation</a>
+                            </div>
                             @error('webhook_url')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -122,6 +134,29 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- API Integration Info Card -->
+        <div class="card mt-4 border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Need Help with Integration?
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">After creating your site, you'll receive API credentials. Use them to integrate XtraPay Virtual Accounts:</p>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ route('documentation.quick-start') }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                        <i class="fas fa-rocket me-2"></i>Quick Start Guide
+                    </a>
+                    <a href="{{ route('documentation.integration-guide') }}" class="btn btn-sm btn-outline-success" target="_blank">
+                        <i class="fas fa-code me-2"></i>Integration Guide
+                    </a>
+                    <a href="{{ route('documentation.api-docs') }}" class="btn btn-sm btn-outline-info" target="_blank">
+                        <i class="fas fa-server me-2"></i>API Reference
+                    </a>
+                </div>
             </div>
         </div>
     </div>

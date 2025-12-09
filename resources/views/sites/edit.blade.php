@@ -23,7 +23,10 @@
                 <h1 class="h2 fw-bold mb-1">Edit Site</h1>
                 <p class="text-secondary mb-0">Update site information for {{ $site->name }}</p>
             </div>
-            <div class="mt-3 mt-md-0">
+            <div class="mt-3 mt-md-0 d-flex gap-2">
+                <a href="{{ route('documentation.index') }}" class="btn btn-outline-info" target="_blank">
+                    <i class="fas fa-book me-2"></i>API Documentation
+                </a>
                 <a href="{{ route('sites.index') }}" class="btn btn-outline-primary">
                     <i class="fas fa-arrow-left me-2"></i>Back to Sites
                 </a>
@@ -66,22 +69,39 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label for="webhook_url" class="form-label">Webhook URL</label>
+                            <label for="webhook_url" class="form-label">
+                                Webhook URL
+                                <a href="{{ route('documentation.integration-guide') }}#setting-up-webhook-notifications" target="_blank" class="text-info ms-2" title="Learn about webhook setup">
+                                    <i class="fas fa-question-circle"></i>
+                                </a>
+                            </label>
                             <input type="url" class="form-control @error('webhook_url') is-invalid @enderror" 
                                    id="webhook_url" name="webhook_url" 
                                    value="{{ old('webhook_url', $site->webhook_url) }}" 
-                                   placeholder="https://example.com/webhook" required>
+                                   placeholder="https://example.com/webhooks/xtrapay" required>
+                            <div class="form-text">
+                                Where to receive payment notifications. 
+                                <a href="{{ route('documentation.integration-guide') }}#setting-up-webhook-notifications" target="_blank">See documentation</a>
+                            </div>
                             @error('webhook_url')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label for="api_code" class="form-label">API Code</label>
+                            <label for="api_code" class="form-label">
+                                API Code
+                                <a href="{{ route('documentation.api-docs') }}#authentication" target="_blank" class="text-info ms-2" title="Learn about API authentication">
+                                    <i class="fas fa-question-circle"></i>
+                                </a>
+                            </label>
                             <input type="text" class="form-control @error('api_code') is-invalid @enderror" 
                                    id="api_code" name="api_code" 
                                    value="{{ old('api_code', $site->api_code) }}" 
-                                   placeholder="Enter API code" required>
+                                   placeholder="Enter API code" required readonly>
+                            <div class="form-text">
+                                Your site's unique API code. Used with API Key for authentication.
+                            </div>
                             @error('api_code')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -89,9 +109,22 @@
 
                         @if($site->api_key)
                         <div class="col-md-6 mb-3">
-                            <label for="api_key" class="form-label">API Key</label>
-                            <input type="text" class="form-control" id="api_key" name="api_key" value="{{ $site->api_key }}" readonly>
-                            <div class="form-text">Use this API key for webhook authentication.</div>
+                            <label for="api_key" class="form-label">
+                                API Key
+                                <a href="{{ route('documentation.api-docs') }}#authentication" target="_blank" class="text-info ms-2" title="Learn about API authentication">
+                                    <i class="fas fa-question-circle"></i>
+                                </a>
+                            </label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="api_key" name="api_key" value="{{ $site->api_key }}" readonly>
+                                <button class="btn btn-outline-secondary" type="button" onclick="copyApiKey()" title="Copy API Key">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                Use this API key for API authentication. 
+                                <a href="{{ route('documentation.api-docs') }}" target="_blank">View API documentation</a>
+                            </div>
                         </div>
                         @endif
 
@@ -133,5 +166,55 @@
                 </form>
             </div>
         </div>
+
+        <!-- API Credentials Info Card -->
+        <div class="card mt-4 border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>API Integration Help
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Use your API credentials to integrate XtraPay Virtual Accounts into your website:</p>
+                <ul class="mb-3">
+                    <li><strong>API Code:</strong> {{ $site->api_code }}</li>
+                    <li><strong>API Key:</strong> {{ $site->api_key ? 'Configured' : 'Not set' }}</li>
+                    <li><strong>Webhook URL:</strong> {{ $site->webhook_url ?: 'Not configured' }}</li>
+                </ul>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ route('documentation.quick-start') }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                        <i class="fas fa-rocket me-2"></i>Quick Start Guide
+                    </a>
+                    <a href="{{ route('documentation.integration-guide') }}" class="btn btn-sm btn-outline-success" target="_blank">
+                        <i class="fas fa-code me-2"></i>Integration Guide
+                    </a>
+                    <a href="{{ route('documentation.api-docs') }}" class="btn btn-sm btn-outline-info" target="_blank">
+                        <i class="fas fa-server me-2"></i>API Reference
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <script>
+        function copyApiKey() {
+            const apiKeyInput = document.getElementById('api_key');
+            apiKeyInput.select();
+            apiKeyInput.setSelectionRange(0, 99999); // For mobile devices
+            document.execCommand('copy');
+            
+            // Show feedback
+            const btn = event.target.closest('button');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            btn.classList.add('btn-success');
+            btn.classList.remove('btn-outline-secondary');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-secondary');
+            }, 2000);
+        }
+    </script>
 </x-app-layout> 

@@ -23,7 +23,10 @@
                 <h1 class="h2 fw-bold mb-1">Site Management</h1>
                 <p class="text-secondary mb-0">Manage your business locations and monitor their performance</p>
             </div>
-            <div class="mt-3 mt-md-0">
+            <div class="mt-3 mt-md-0 d-flex gap-2">
+                <a href="{{ route('documentation.index') }}" class="btn btn-outline-info" target="_blank">
+                    <i class="fas fa-book me-2"></i>API Documentation
+                </a>
                 <a href="{{ route('sites.create') }}" class="btn btn-primary">
                     <i class="fas fa-plus me-2"></i>Add New Site
                 </a>
