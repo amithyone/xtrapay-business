@@ -217,12 +217,31 @@
         
         .content-section code {
             background: #f7fafc;
-            padding: 4px 8px;
+            padding: 4px 10px;
             border-radius: 6px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
+            font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+            font-size: 0.95em;
             color: #e53e3e;
             border: 1px solid #e2e8f0;
+        }
+        
+        .content-section pre {
+            background: #1a202c;
+            padding: 25px;
+            border-radius: 12px;
+            overflow-x: auto;
+            margin: 25px 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+        
+        .content-section pre code {
+            background: none;
+            padding: 0;
+            color: #e2e8f0;
+            border: none;
+            font-size: 0.95em;
+            line-height: 1.6;
         }
         
         .content-section a {
