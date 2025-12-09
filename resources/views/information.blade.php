@@ -12,6 +12,11 @@
             XtraPay Business
         </div>
         <p class="txt1">Enterprise Payment Solutions</p>
+        <div class="mt-3">
+            <a href="{{ route('documentation.index') }}" class="btn btn-outline-primary">
+                <i class="fas fa-book me-2"></i>View API Documentation
+            </a>
+        </div>
     </div>
 
     <!-- Service Overview -->

@@ -52,15 +52,28 @@ class PayVibeService
 
             $data = $response->json();
 
-            if ($response->successful() && isset($data['status']) && $data['status'] === 'success') {
+            // Check for success - PayVibe returns status as boolean true or string 'success'
+            $isSuccess = ($response->successful() && 
+                         (($data['status'] === true || $data['status'] === 'success') || 
+                          (isset($data['data']) && isset($data['data']['virtual_account_number']))));
+
+            if ($isSuccess) {
+                // Handle different response formats
+                $accountData = $data['data'] ?? $data;
+                
+                // Normalize field names for consistency
+                if (isset($accountData['virtual_account_number']) && !isset($accountData['account_number'])) {
+                    $accountData['account_number'] = $accountData['virtual_account_number'];
+                }
+                
                 Log::info('PayVibe: Virtual account initiated successfully', [
                     'reference' => $reference,
-                    'account_number' => $data['data']['account_number'] ?? null
+                    'account_number' => $accountData['account_number'] ?? $accountData['virtual_account_number'] ?? null
                 ]);
 
                 return [
                     'success' => true,
-                    'data' => $data['data']
+                    'data' => $accountData
                 ];
             }
 

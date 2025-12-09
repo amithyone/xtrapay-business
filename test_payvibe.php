@@ -50,10 +50,12 @@ try {
     
     if ($result['success']) {
         echo "   ✅ Virtual Account Generated!\n";
-        echo "   Account Number: " . ($result['data']['account_number'] ?? 'N/A') . "\n";
+        $accountNumber = $result['data']['account_number'] ?? $result['data']['virtual_account_number'] ?? 'N/A';
+        echo "   Account Number: {$accountNumber}\n";
         echo "   Bank Name: " . ($result['data']['bank_name'] ?? 'N/A') . "\n";
         echo "   Account Name: " . ($result['data']['account_name'] ?? 'N/A') . "\n";
         echo "   Amount: ₦" . number_format($amountInKobo / 100, 2) . "\n";
+        echo "   Reference: " . ($result['data']['reference'] ?? 'N/A') . "\n";
         echo "\n   Full Response:\n";
         echo "   " . json_encode($result['data'], JSON_PRETTY_PRINT) . "\n";
     } else {

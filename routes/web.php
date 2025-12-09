@@ -173,6 +173,13 @@ Route::get('/information', function () {
     return view('information');
 })->name('information');
 
+// Documentation Routes
+Route::get('/docs', [\App\Http\Controllers\DocumentationController::class, 'index'])->name('documentation.index');
+Route::get('/docs/quick-start', [\App\Http\Controllers\DocumentationController::class, 'quickStart'])->name('documentation.quick-start');
+Route::get('/docs/integration-guide', [\App\Http\Controllers\DocumentationController::class, 'integrationGuide'])->name('documentation.integration-guide');
+Route::get('/docs/api', [\App\Http\Controllers\DocumentationController::class, 'apiDocs'])->name('documentation.api-docs');
+Route::get('/docs/fee-calculator', [\App\Http\Controllers\DocumentationController::class, 'feeCalculator'])->name('documentation.fee-calculator');
+
 // Redirect root to information page
 Route::get('/', function () {
     return redirect()->route('information');

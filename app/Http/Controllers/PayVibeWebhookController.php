@@ -42,6 +42,7 @@ class PayVibeWebhookController extends Controller
             }
 
             // Find transaction by reference
+            // This ensures we get the exact transaction for this reference
             $transaction = Transaction::where('reference', $reference)
                 ->orWhere('metadata->payvibe_reference', $reference)
                 ->first();
@@ -57,6 +58,63 @@ class PayVibeWebhookController extends Controller
                     'message' => 'Transaction not found'
                 ], 404);
             }
+
+            // Verify transaction has required relationships
+            if (!$transaction->site_id || !$transaction->business_profile_id) {
+                Log::error('PayVibe Webhook: Transaction missing site or business profile', [
+                    'transaction_id' => $transaction->id,
+                    'reference' => $reference,
+                    'site_id' => $transaction->site_id,
+                    'business_profile_id' => $transaction->business_profile_id
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaction configuration error'
+                ], 500);
+            }
+
+            // Load site and business profile with validation
+            $site = $transaction->site;
+            $businessProfile = $transaction->businessProfile;
+
+            if (!$site) {
+                Log::error('PayVibe Webhook: Site not found for transaction', [
+                    'transaction_id' => $transaction->id,
+                    'site_id' => $transaction->site_id,
+                    'reference' => $reference
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Site not found'
+                ], 500);
+            }
+
+            if (!$businessProfile) {
+                Log::error('PayVibe Webhook: Business profile not found for transaction', [
+                    'transaction_id' => $transaction->id,
+                    'business_profile_id' => $transaction->business_profile_id,
+                    'reference' => $reference
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Business profile not found'
+                ], 500);
+            }
+
+            // Log transaction isolation details for verification
+            Log::info('PayVibe Webhook: Transaction isolation verified', [
+                'transaction_id' => $transaction->id,
+                'reference' => $reference,
+                'site_id' => $site->id,
+                'site_name' => $site->name,
+                'site_api_code' => $site->api_code,
+                'business_profile_id' => $businessProfile->id,
+                'business_name' => $businessProfile->business_name,
+                'webhook_url' => $site->webhook_url ?? 'Not configured'
+            ]);
 
             // Check if payment is successful
             $isSuccessful = ($status === 'success' || $status === 'completed' || $status === 'paid');
@@ -77,18 +135,16 @@ class PayVibeWebhookController extends Controller
                         ])
                     ]);
 
-                    // Credit business profile
-                    $businessProfile = $transaction->businessProfile;
-                    if ($businessProfile) {
-                        $businessProfile->increment('balance', $transaction->amount);
+                    // Credit business profile (already loaded and validated above)
+                    $businessProfile->increment('balance', $transaction->amount);
 
-                        Log::info('PayVibe Webhook: Business profile credited', [
-                            'transaction_id' => $transaction->id,
-                            'business_profile_id' => $businessProfile->id,
-                            'amount' => $transaction->amount,
-                            'new_balance' => $businessProfile->balance
-                        ]);
-                    }
+                    Log::info('PayVibe Webhook: Business profile credited', [
+                        'transaction_id' => $transaction->id,
+                        'business_profile_id' => $businessProfile->id,
+                        'business_name' => $businessProfile->business_name,
+                        'amount' => $transaction->amount,
+                        'new_balance' => $businessProfile->balance
+                    ]);
 
                     // Process savings collection if applicable
                     try {
@@ -103,8 +159,11 @@ class PayVibeWebhookController extends Controller
 
                     DB::commit();
 
-                    // Send notification to business
+                    // Send notifications to business
                     $this->notifyBusiness($transaction);
+                    
+                    // Send webhook notification to business's website if configured
+                    $this->sendWebhookToBusiness($transaction);
 
                     Log::info('PayVibe Webhook: Payment processed successfully', [
                         'transaction_id' => $transaction->id,
@@ -227,6 +286,131 @@ class PayVibeWebhookController extends Controller
             Log::error('PayVibe Webhook: Error sending notification', [
                 'transaction_id' => $transaction->id,
                 'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Send webhook notification to business's website
+     * This sends a POST request to the business's webhook_url when payment is received
+     * 
+     * IMPORTANT: This ensures each business/site only receives webhooks for their own transactions
+     * - Transaction is linked to specific site_id and business_profile_id
+     * - Site has unique webhook_url
+     * - No cross-contamination between businesses
+     */
+    private function sendWebhookToBusiness(Transaction $transaction)
+    {
+        try {
+            // Reload site to ensure we have latest data
+            $site = Site::find($transaction->site_id);
+            
+            if (!$site) {
+                Log::error('PayVibe Webhook: Cannot send webhook - site not found', [
+                    'transaction_id' => $transaction->id,
+                    'site_id' => $transaction->site_id,
+                    'business_profile_id' => $transaction->business_profile_id
+                ]);
+                return;
+            }
+
+            // Verify site belongs to the transaction's business
+            if ($site->business_profile_id !== $transaction->business_profile_id) {
+                Log::error('PayVibe Webhook: Site-Business mismatch detected!', [
+                    'transaction_id' => $transaction->id,
+                    'transaction_business_id' => $transaction->business_profile_id,
+                    'site_id' => $site->id,
+                    'site_business_id' => $site->business_profile_id,
+                    'reference' => $transaction->reference
+                ]);
+                // Don't send webhook if mismatch - security measure
+                return;
+            }
+
+            // Check if site has webhook URL configured
+            if (!$site->webhook_url) {
+                Log::info('PayVibe Webhook: Webhook URL not configured for site', [
+                    'transaction_id' => $transaction->id,
+                    'site_id' => $site->id,
+                    'site_name' => $site->name,
+                    'business_profile_id' => $transaction->business_profile_id
+                ]);
+                return;
+            }
+
+            // Verify site is active
+            if (!$site->is_active) {
+                Log::warning('PayVibe Webhook: Site is not active, skipping webhook', [
+                    'transaction_id' => $transaction->id,
+                    'site_id' => $site->id,
+                    'site_name' => $site->name
+                ]);
+                return;
+            }
+
+            // Prepare webhook payload
+            $payload = [
+                'event' => 'payment.received',
+                'transaction' => [
+                    'id' => $transaction->id,
+                    'reference' => $transaction->reference,
+                    'external_id' => $transaction->external_id,
+                    'amount' => $transaction->amount,
+                    'currency' => $transaction->currency,
+                    'status' => $transaction->status,
+                    'payment_method' => $transaction->payment_method,
+                    'customer_email' => $transaction->customer_email,
+                    'customer_name' => $transaction->customer_name,
+                    'description' => $transaction->description,
+                    'created_at' => $transaction->created_at->toIso8601String(),
+                    'updated_at' => $transaction->updated_at->toIso8601String(),
+                ],
+                'site' => [
+                    'id' => $site->id,
+                    'name' => $site->name,
+                    'api_code' => $site->api_code,
+                ],
+                'metadata' => $transaction->metadata ?? [],
+                'timestamp' => now()->toIso8601String(),
+            ];
+
+            // Log detailed isolation information
+            Log::info('PayVibe Webhook: Sending webhook to business - Isolation verified', [
+                'transaction_id' => $transaction->id,
+                'reference' => $transaction->reference,
+                'site_id' => $site->id,
+                'site_name' => $site->name,
+                'site_api_code' => $site->api_code,
+                'business_profile_id' => $transaction->business_profile_id,
+                'webhook_url' => $site->webhook_url,
+                'amount' => $transaction->amount,
+                'isolation_check' => 'PASSED - Site matches transaction business'
+            ]);
+
+            // Send webhook POST request
+            $response = Http::timeout(10)->post($site->webhook_url, $payload);
+
+            if ($response->successful()) {
+                Log::info('PayVibe Webhook: Webhook sent successfully to business', [
+                    'transaction_id' => $transaction->id,
+                    'webhook_url' => $site->webhook_url,
+                    'response_status' => $response->status()
+                ]);
+            } else {
+                Log::warning('PayVibe Webhook: Webhook sent but received error response', [
+                    'transaction_id' => $transaction->id,
+                    'webhook_url' => $site->webhook_url,
+                    'response_status' => $response->status(),
+                    'response_body' => $response->body()
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            // Don't fail the webhook processing if business webhook fails
+            Log::error('PayVibe Webhook: Error sending webhook to business', [
+                'transaction_id' => $transaction->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
         }
     }

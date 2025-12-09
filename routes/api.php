@@ -24,4 +24,8 @@ Route::post('/webhook/verify', [\App\Http\Controllers\WebhookController::class, 
 Route::get('/webhook/test', [\App\Http\Controllers\WebhookController::class, 'testWebhook'])->name('webhook.test');
 
 // PayVibe Webhook Route (no auth required - PayVibe will call this)
-Route::post('/webhook/payvibe', [\App\Http\Controllers\PayVibeWebhookController::class, 'handleWebhook'])->name('api.webhook.payvibe'); 
+Route::post('/webhook/payvibe', [\App\Http\Controllers\PayVibeWebhookController::class, 'handleWebhook'])->name('api.webhook.payvibe');
+
+// XtraPay Virtual Account API Routes (for businesses to request virtual accounts)
+Route::post('/v1/virtual-accounts/request', [\App\Http\Controllers\Api\PayVibeApiController::class, 'requestVirtualAccount'])->name('api.virtual-accounts.request');
+Route::post('/v1/virtual-accounts/check-status', [\App\Http\Controllers\Api\PayVibeApiController::class, 'checkPaymentStatus'])->name('api.virtual-accounts.check-status'); 
