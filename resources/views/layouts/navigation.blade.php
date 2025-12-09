@@ -41,6 +41,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="{{ route('documentation.index') }}" class="nav-link {{ request()->routeIs('documentation.*') ? 'active' : '' }}" target="_blank">
+                        <i class="fas fa-book me-2"></i>{{ __('API Documentation') }}
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="{{ route('transactions.index') }}" class="nav-link {{ request()->routeIs('transactions.*') ? 'active' : '' }}">
                         {{ __('Transactions') }}
                     </a>
